@@ -41,8 +41,5 @@
   },
   "engines": {
     "node": ">=22.0.0"
-  },
-  "overrides": {
-    "esbuild": "$esbuild"
   }
 }
