@@ -1,0 +1,367 @@
+{
+  "_meta": {
+    "description": "Extracto consolidado de APIs Oracle OHIP para Puente Clos Apalta v2",
+    "source_files": [
+      "LeisureManagementApis.json (v26.1.0.0)",
+      "CustomerManagementApis.json (v26.1.0.0)",
+      "CashieringApis.json (v26.1.0.0)"
+    ],
+    "extracted": "2026-03-27",
+    "purpose": "Solo contiene las operaciones y schemas que el bridge necesita para Appointments"
+  },
+  "apis": {
+    "leisureManagement": {
+      "description": "OPERA Cloud Leisure Management API v26.1.0.0",
+      "operations": {
+        "postActivityBooking": {
+          "method": "POST",
+          "path": "/hotels/{hotelId}/reservations/{reservationId}/activityBookings",
+          "pathParams": [
+            "hotelId",
+            "reservationId"
+          ],
+          "headers": [
+            "Authorization",
+            "x-app-key",
+            "x-hotelid"
+          ],
+          "body": {
+            "activityBooking": {
+              "hotelId": "string (max 20)",
+              "reservationId": "uniqueID_Type",
+              "profileId": "uniqueID_Type (optional)",
+              "activities": "activityList (array of activity objects)"
+            }
+          }
+        },
+        "putActivityBooking": {
+          "method": "PUT",
+          "path": "/hotels/{hotelId}/reservations/{reservationId}/activityBookings",
+          "pathParams": [
+            "hotelId",
+            "reservationId"
+          ],
+          "description": "Update activity booking for a reservation"
+        },
+        "deleteActivityBooking": {
+          "method": "DELETE",
+          "path": "/hotels/{hotelId}/reservations/{reservationId}/activityBookings",
+          "pathParams": [
+            "hotelId",
+            "reservationId"
+          ],
+          "description": "Cancel activity booking for a reservation"
+        }
+      },
+      "schemas": {
+        "activityListItem": {
+          "type": {
+            "type": "string",
+            "description": "Activity type code (e.g. SPA, Golf)"
+          },
+          "location": {
+            "type": "string",
+            "description": "Where the activity takes place"
+          },
+          "name": {
+            "type": "array of string (max 200)",
+            "description": "Names of participants"
+          },
+          "numberOfPersons": {
+            "type": "integer"
+          },
+          "timeSpan": {
+            "startDateTime": "date-time",
+            "endDateTime": "date-time"
+          },
+          "description": {
+            "type": "array of string (max 2000)"
+          },
+          "note": {
+            "type": "array of string (max 2000)"
+          },
+          "amount": {
+            "amount": "number",
+            "currencyCode": "string (3 chars)"
+          },
+          "status": {
+            "type": "string",
+            "description": "Activity status code"
+          }
+        }
+      }
+    },
+    "customerManagement": {
+      "description": "OPERA Cloud Customer Management Service API v26.1.0.0",
+      "operations": {
+        "postTrackItItems": {
+          "method": "POST",
+          "path": "/hotels/{hotelId}/trackItems",
+          "pathParams": [
+            "hotelId"
+          ],
+          "headers": [
+            "Authorization",
+            "x-app-key",
+            "x-hotelid"
+          ],
+          "description": "Creates track it items (service requests / maintenance)"
+        },
+        "putTrackItItems": {
+          "method": "PUT",
+          "path": "/hotels/{hotelId}/trackItems",
+          "pathParams": [
+            "hotelId"
+          ],
+          "description": "Updates track it items"
+        },
+        "deleteTrackItItems": {
+          "method": "DELETE",
+          "path": "/hotels/{hotelId}/trackItems",
+          "pathParams": [
+            "hotelId"
+          ],
+          "description": "Deletes track it items"
+        },
+        "getTrackItItems": {
+          "method": "GET",
+          "path": "/hotels/{hotelId}/trackItems",
+          "pathParams": [
+            "hotelId"
+          ],
+          "description": "Fetches track it items"
+        }
+      },
+      "schemas": {
+        "trackItItemType": {
+          "hotelId": "string (max 20)",
+          "trackItId": "unique ID",
+          "ticketNumber": "string (max 80)",
+          "referenceNumber": "string (max 20)",
+          "type": "trackItType (code + description)",
+          "action": "trackItActionType (code + description)",
+          "location": "codeDescriptionType (code + description)",
+          "quantity": "integer",
+          "followUpDate": "date",
+          "description": "string (max 2000)",
+          "assignedTo": "applicationUserType",
+          "reservationInfo": "trackItReservationInfoType (links to reservation)"
+        }
+      }
+    },
+    "cashiering": {
+      "description": "OPERA Cloud Cashiering API v26.1.0.0",
+      "operations": {
+        "postBillingCharges": {
+          "method": "POST",
+          "path": "/hotels/{hotelId}/reservations/{reservationId}/charges",
+          "pathParams": [
+            "hotelId",
+            "reservationId"
+          ],
+          "headers": [
+            "Authorization",
+            "x-app-key",
+            "x-hotelid"
+          ],
+          "description": "Post charge to a reservation folio"
+        },
+        "getBillingCharges": {
+          "method": "GET",
+          "path": "/hotels/{hotelId}/reservations/{reservationId}/charges",
+          "pathParams": [
+            "hotelId",
+            "reservationId"
+          ],
+          "description": "Get billing charges for a reservation"
+        }
+      },
+      "schemas": {
+        "billingChargesCriteria": {
+          "hotelId": "string (max 20)",
+          "reservationId": "reservationId object",
+          "cashierId": "cashierId",
+          "charges": "array of chargeCriteria"
+        },
+        "chargeCriteria": {
+          "transactionCode": "string (max 80) — e.g. 2004=Breakfast, 2010=Lunch, 2020=Dinner",
+          "articleCode": "string (max 20) — optional article ID",
+          "price": {
+            "amount": "number",
+            "currencyCode": "string (3 chars)"
+          },
+          "postingQuantity": "integer",
+          "postingReference": "string (max 2000) — user-defined reference",
+          "postingRemark": "string (max 2000) — user-defined remark (meal description goes here)",
+          "folioWindowNo": "integer — which folio window (0-7)",
+          "applyRoutingInstructions": "boolean",
+          "usePackageAllowance": "boolean"
+        }
+      },
+      "transactionCodesForMeals_Outlet1": {
+        "breakfast_food": "2004",
+        "lunch_food": "2010",
+        "dinner_food": "2020",
+        "breakfast_alcoholic_bev": "2002",
+        "breakfast_nonalcoholic_bev": "2014",
+        "lunch_nonalcoholic_bev": "2011",
+        "lunch_alcoholic_bev": "2012",
+        "dinner_nonalcoholic_bev": "2021",
+        "dinner_alcoholic_bev": "2022",
+        "miscellaneous": "2050"
+      }
+    },
+    "guestMessages": {
+      "description": "Part of OPERA Cloud Reservation API (ApiOracleReservations.json) — already in Knowledge",
+      "operations": {
+        "postGuestMessages": {
+          "method": "POST",
+          "path": "/hotels/{hotelId}/reservations/{reservationId}/guestMessages",
+          "pathParams": [
+            "hotelId",
+            "reservationId"
+          ]
+        },
+        "putResvGuestMessages": {
+          "method": "PUT",
+          "path": "/hotels/{hotelId}/reservations/{reservationId}/guestMessages"
+        },
+        "putGuestMessages": {
+          "method": "PUT",
+          "path": "/hotels/{hotelId}/reservations/{reservationId}/guestMessages/{guestMessageId}"
+        },
+        "deleteGuestMessages": {
+          "method": "DELETE",
+          "path": "/hotels/{hotelId}/reservations/{reservationId}/guestMessages/{guestMessageId}"
+        }
+      },
+      "schemas": {
+        "guestMessageType": {
+          "messageText": "string (max 2000)",
+          "messageDate": "date-time",
+          "typeOfMessage": "Voice | Text",
+          "recipient": "string (max 20000)",
+          "operator": "string (max 256)"
+        }
+      }
+    }
+  },
+  "lovData": {
+    "description": "Real LOV values from Oracle instance CAR (Clos Apalta), queried March 2026",
+    "roomTypes": {
+      "CASITA": {
+        "name": "Casitas",
+        "rooms": 4,
+        "pseudo": false,
+        "class": "ALL"
+      },
+      "PLCASITA": {
+        "name": "Pool Casitas",
+        "rooms": 6,
+        "pseudo": false,
+        "class": "ALL"
+      },
+      "OWNERC": {
+        "name": "Owner's Casita",
+        "rooms": 1,
+        "pseudo": false,
+        "class": "ALL"
+      },
+      "VILLAS": {
+        "name": "VILLAS",
+        "rooms": 0,
+        "pseudo": false,
+        "class": "SUI"
+      },
+      "PI": {
+        "name": "Posting Interface",
+        "pseudo": true
+      },
+      "PM": {
+        "name": "Posting Master",
+        "pseudo": true
+      }
+    },
+    "ratePlans": {
+      "bridgeDefault": {
+        "BARHB": "Half Board Rate",
+        "BAROV": "OVERNIGHT",
+        "BARFB": "Full Board Rate"
+      },
+      "all": {
+        "BAROVERN": "OVERNIGHT W/ BKF",
+        "BARRO": "Flexible Rate",
+        "COMPL": "Complimentary Rate",
+        "BARBB": "Flexible Rate with Breakfast",
+        "BARNR": "Flexible Rate Non-Refundable",
+        "BAREB": "Flexible Rate Early Bird",
+        "NEG1": "Negotiated Rate 10%",
+        "NEG2": "Negotiated Rate 20%",
+        "GLOVEFB": "GLOVE TRAVEL FULL BOARD",
+        "GLOVEHB": "GLOVE TRAVEL HALF BOARD",
+        "GLOVEON": "GLOVE TRAVEL OVERNIGHT",
+        "STAFF": "Staff Rate",
+        "PSE": "Pseudo Room Rate",
+        "DAY": "Daily Rate",
+        "BKGFB": "BOOKING FULL BOARD",
+        "BKGHB": "BOOKING HALF BOARD",
+        "BKGON": "BOOKING OVERNIGHT"
+      }
+    },
+    "paymentMethods": {
+      "CASH": {
+        "name": "Cash",
+        "trxCode": "9000"
+      },
+      "MC": {
+        "name": "Mastercard",
+        "trxCode": "9100",
+        "cardType": "MC"
+      },
+      "MCO": {
+        "name": "Mastercard Offline",
+        "trxCode": "9102"
+      },
+      "VA": {
+        "name": "Visa",
+        "trxCode": "9200",
+        "cardType": "VA"
+      },
+      "VAO": {
+        "name": "Visa Offline",
+        "trxCode": "9202"
+      },
+      "AX": {
+        "name": "American Express",
+        "trxCode": "9300",
+        "cardType": "AX"
+      },
+      "AXO": {
+        "name": "American Express Offline",
+        "trxCode": "9302"
+      },
+      "BTR": {
+        "name": "Bank Transfer",
+        "trxCode": "9400"
+      },
+      "INV": {
+        "name": "Direct Bill",
+        "trxCode": "9800"
+      }
+    },
+    "activityTypes": {
+      "_status": "Only 3 generic types configured — hotel activities need to be created",
+      "configured": [
+        "*CSL* (Lead Notification)",
+        "BROCHURE (Brochure Requests)",
+        "OUT (Outlook Activity)"
+      ]
+    },
+    "dietaryPreferences": {
+      "_status": "Empty — 0 items configured"
+    },
+    "serviceRequestCodes": {
+      "_status": "Empty — 0 items configured"
+    }
+  }
+}
