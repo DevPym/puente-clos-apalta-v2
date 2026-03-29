@@ -1,0 +1,23 @@
+{
+  "name": "puente-clos-apalta-v2",
+  "version": "1.0.0",
+  "description": "Middleware bridge HubSpot CRM - Oracle OPERA Cloud (OHIP REST API)",
+  "scripts": {
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "lint": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DevPym/puente-clos-apalta-v2.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/DevPym/puente-clos-apalta-v2/issues"
+  },
+  "homepage": "https://github.com/DevPym/puente-clos-apalta-v2#readme"
+}
