@@ -1,12 +1,46 @@
 import express from 'express';
 import { healthRouter } from './routes/health.route.js';
+import { createWebhookRouter } from './routes/webhook.route.js';
+import { createSyncRouter } from './routes/sync.route.js';
+import { createDlqRouter } from './routes/dlq.route.js';
+import { createWebhookVerifyMiddleware } from './middleware/webhook.verify.js';
+import { createErrorHandler } from './middleware/error.handler.js';
 import type { ILogger } from '../../shared/logger/logger.js';
+import type { QueueRepository } from '../../shared/queue/queue.repository.js';
+import type { DlqRepository } from '../../shared/dlq/dlq.repository.js';
 
-export function createServer(logger: ILogger) {
+export interface ServerDeps {
+  logger: ILogger;
+  queue: QueueRepository;
+  dlq: DlqRepository;
+  hubspotClientSecret: string;
+}
+
+export function createServer(deps: ServerDeps) {
+  const { logger, queue, dlq, hubspotClientSecret } = deps;
   const app = express();
 
-  app.use(express.json());
+  // Raw body capture for webhook signature verification
+  app.use(express.json({
+    verify: (req, _res, buf) => {
+      (req as express.Request & { rawBody?: string }).rawBody = buf.toString();
+    },
+  }));
+
+  // Health check (no auth)
   app.use(healthRouter);
+
+  // Webhook route (with HubSpot signature verification)
+  const webhookVerify = createWebhookVerifyMiddleware(hubspotClientSecret);
+  const webhookRouter = createWebhookRouter(queue, logger);
+  app.use(webhookVerify, webhookRouter);
+
+  // Admin/sync routes (no auth in phase 1)
+  app.use(createSyncRouter(queue, logger));
+  app.use(createDlqRouter(dlq, queue, logger));
+
+  // Global error handler
+  app.use(createErrorHandler(logger));
 
   logger.info('Express server configured');
 

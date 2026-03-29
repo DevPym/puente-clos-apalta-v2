@@ -7,17 +7,42 @@ import { config } from './shared/config/env.js';
 import { OracleAuth } from './infrastructure/oracle/oracle.auth.js';
 import { OracleClient } from './infrastructure/oracle/oracle.client.js';
 import { HubSpotClient } from './infrastructure/hubspot/hubspot.client.js';
+import { createDb } from './shared/db/client.js';
+import type { Db } from './shared/db/client.js';
+import { QueueRepository } from './shared/queue/queue.repository.js';
+import { DlqRepository } from './shared/dlq/dlq.repository.js';
+import { SyncLogRepository } from './shared/logger/sync-log.repository.js';
+import { Worker } from './shared/queue/worker.js';
+import { processContact } from './features/contact/contact.job.js';
+import { processCompany } from './features/company/company.job.js';
+import { processDeal } from './features/deal/deal.job.js';
+import { cancelDeal } from './features/deal/deal.cancel.js';
 
 export interface Container {
   oracle: IOracleClient;
   hubspot: IHubSpotClient;
   logger: ILogger;
   config: AppConfig;
+  db: Db;
+  queue: QueueRepository;
+  dlq: DlqRepository;
+  syncLog: SyncLogRepository;
+  worker: Worker;
+  dbClose: () => Promise<void>;
 }
 
 export function createContainer(): Container {
   const logger = createLogger(config.NODE_ENV);
 
+  // Database
+  const { db, sql: pgSql } = createDb(config.DATABASE_URL);
+
+  // Repositories
+  const queue = new QueueRepository(db);
+  const dlq = new DlqRepository(db);
+  const syncLog = new SyncLogRepository(db);
+
+  // Oracle
   const oracleAuth = new OracleAuth(
     {
       baseUrl: config.ORACLE_BASE_URL,
@@ -38,10 +63,28 @@ export function createContainer(): Container {
     logger,
   );
 
+  // HubSpot
   const hubspot = new HubSpotClient(
     { accessToken: config.HUBSPOT_ACCESS_TOKEN },
     logger,
   );
 
-  return { oracle, hubspot, logger, config };
+  // Worker
+  const worker = new Worker(queue, dlq, syncLog, logger);
+  const jobDeps = { oracle, hubspot, logger };
+  const cancelDeps = { ...jobDeps, cancellationReasonCode: config.ORACLE_CANCELLATION_REASON_CODE };
+
+  worker.registerHandler('contact.create', (job) => processContact(jobDeps, { objectId: job.objectId }));
+  worker.registerHandler('contact.update', (job) => processContact(jobDeps, { objectId: job.objectId }));
+  worker.registerHandler('company.create', (job) => processCompany(jobDeps, { objectId: job.objectId }));
+  worker.registerHandler('company.update', (job) => processCompany(jobDeps, { objectId: job.objectId }));
+  worker.registerHandler('deal.create', (job) => processDeal(jobDeps, { objectId: job.objectId }));
+  worker.registerHandler('deal.update', (job) => processDeal(jobDeps, { objectId: job.objectId }));
+  worker.registerHandler('deal.delete', (job) => cancelDeal(cancelDeps, { objectId: job.objectId }));
+
+  const dbClose = async () => {
+    await pgSql.end();
+  };
+
+  return { oracle, hubspot, logger, config, db, queue, dlq, syncLog, worker, dbClose };
 }
