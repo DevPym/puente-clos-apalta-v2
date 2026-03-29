@@ -40,6 +40,9 @@
     "vitest": "^4.1.2"
   },
   "engines": {
-    "node": "20.x"
+    "node": ">=22.0.0"
+  },
+  "overrides": {
+    "esbuild": "$esbuild"
   }
 }
