@@ -536,13 +536,11 @@ export class OracleClient implements IOracleClient {
       };
     }
 
-    // reservationPaymentMethods — per spec: array of { paymentMethod, folioView }
-    if (reservation.paymentMethod) {
-      resObj.reservationPaymentMethods = [{
-        paymentMethod: reservation.paymentMethod,
-        folioView: '1',
-      }];
-    }
+    // reservationPaymentMethods — required by Oracle, default to CASH
+    resObj.reservationPaymentMethods = [{
+      paymentMethod: reservation.paymentMethod ?? 'CASH',
+      folioView: '1',
+    }];
 
     // comments — per spec: comments[].comment.text.value
     if (reservation.comments) {
