@@ -66,17 +66,19 @@ describe('OracleClient', () => {
       phoneNumber: '+56912345678',
     };
 
-    it('creates a guest profile and returns the oracle ID', async () => {
+    it('creates a guest profile and returns the oracle ID from HATEOAS links', async () => {
       httpRequest.mockResolvedValueOnce({
         status: 201,
-        data: { guestIdList: [{ type: 'Profile', id: 'ORACLE-123' }] },
+        data: {
+          links: [{ href: 'https://oracle.test.com/crm/v1/profiles/37510671', rel: 'self', method: 'PUT' }],
+        },
       });
 
       const result = await client.createGuestProfile(profile);
 
       expect(result.ok).toBe(true);
       if (result.ok) {
-        expect(result.data).toBe('ORACLE-123');
+        expect(result.data).toBe('37510671');
       }
       expect(httpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -209,17 +211,19 @@ describe('OracleClient', () => {
       email: 'info@viajeschile.cl',
     };
 
-    it('creates a company and returns the oracle ID', async () => {
+    it('creates a company and returns the oracle ID from HATEOAS links', async () => {
       httpRequest.mockResolvedValueOnce({
         status: 201,
-        data: { companyIdList: [{ type: 'Profile', id: 'CORP-789' }] },
+        data: {
+          links: [{ href: 'https://oracle.test.com/crm/v1/profiles/99887766', rel: 'self', method: 'PUT' }],
+        },
       });
 
       const result = await client.createCompanyProfile(company);
 
       expect(result.ok).toBe(true);
       if (result.ok) {
-        expect(result.data).toBe('CORP-789');
+        expect(result.data).toBe('99887766');
       }
       expect(httpRequest).toHaveBeenCalledWith(
         expect.objectContaining({

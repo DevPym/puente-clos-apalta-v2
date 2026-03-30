@@ -237,9 +237,6 @@ export class OracleClient implements IOracleClient {
         durationMs: Date.now() - startMs,
       });
 
-      if (method === 'POST') {
-        console.log(`Oracle ${method} ${path} response:`, JSON.stringify(response.data, null, 2));
-      }
 
       return { ok: true, data: transform(response.data) };
     } catch (err) {
@@ -516,12 +513,10 @@ export class OracleClient implements IOracleClient {
   }
 
   private extractProfileId(data: unknown): string {
-    console.log('extractProfileId received:', JSON.stringify(data, null, 2));
     if (data && typeof data === 'object') {
       const d = data as Record<string, unknown>;
       if (typeof d.profileId === 'string') return d.profileId;
-      // POST /guests returns guestIdList, POST /companies returns companyIdList,
-      // generic responses may use profileIdList
+      // Try ID lists: guestIdList, companyIdList, profileIdList
       const idLists = ['profileIdList', 'guestIdList', 'companyIdList'] as const;
       for (const listKey of idLists) {
         if (Array.isArray(d[listKey])) {
@@ -529,6 +524,19 @@ export class OracleClient implements IOracleClient {
             if (typeof item === 'object' && item !== null) {
               const entry = item as Record<string, unknown>;
               if (entry.type === 'Profile' && typeof entry.id === 'string') return entry.id;
+            }
+          }
+        }
+      }
+      // Fallback: extract from HATEOAS links (rel="self" href)
+      if (Array.isArray(d.links)) {
+        for (const link of d.links as unknown[]) {
+          if (typeof link === 'object' && link !== null) {
+            const l = link as Record<string, unknown>;
+            if (l.rel === 'self' && typeof l.href === 'string') {
+              const segments = l.href.split('/');
+              const id = segments[segments.length - 1];
+              if (id) return id;
             }
           }
         }
