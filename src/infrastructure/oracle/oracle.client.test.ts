@@ -97,7 +97,7 @@ describe('OracleClient', () => {
       const callPayload = httpRequest.mock.calls[0][0].data;
       expect(callPayload.guestDetails.customer.personName[0].givenName).toBe('Juan');
       expect(callPayload.guestDetails.customer.personName[0].surname).toBe('Pérez');
-      expect(callPayload.guestDetails.emails.emailInfo[0].email).toBe('juan@test.com');
+      expect(callPayload.guestDetails.emails.emailInfo[0].email.emailAddress).toBe('juan@test.com');
       expect(callPayload.guestDetails.telephones.telephoneInfo[0]).toEqual({
         telephone: { phoneTechType: 'PHONE', phoneNumber: '+56912345678' },
       });

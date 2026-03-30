@@ -324,7 +324,7 @@ export class OracleClient implements IOracleClient {
     const guestDetails: Record<string, unknown> = { customer };
 
     if (profile.email) {
-      guestDetails.emails = { emailInfo: [{ email: profile.email }] };
+      guestDetails.emails = { emailInfo: [{ email: { emailAddress: profile.email } }] };
     }
 
     const phones = this.buildPhones(profile.phoneNumber, profile.mobileNumber);
@@ -369,7 +369,7 @@ export class OracleClient implements IOracleClient {
     const profileDetails: Record<string, unknown> = { customer };
 
     if (profile.email) {
-      profileDetails.emails = { emailInfo: [{ email: profile.email }] };
+      profileDetails.emails = { emailInfo: [{ email: { emailAddress: profile.email } }] };
     }
 
     const phones = this.buildPhones(profile.phoneNumber, profile.mobileNumber);
@@ -396,7 +396,7 @@ export class OracleClient implements IOracleClient {
     };
 
     if (profile.email) {
-      companyDetails.emails = { emailInfo: [{ email: profile.email }] };
+      companyDetails.emails = { emailInfo: [{ email: { emailAddress: profile.email } }] };
     }
 
     if (profile.phoneNumber) {
@@ -418,7 +418,7 @@ export class OracleClient implements IOracleClient {
     };
 
     if (profile.email) {
-      profileDetails.emails = { emailInfo: [{ email: profile.email }] };
+      profileDetails.emails = { emailInfo: [{ email: { emailAddress: profile.email } }] };
     }
 
     if (profile.phoneNumber) {
