@@ -4,7 +4,7 @@ import { createServer, startServer } from './infrastructure/http/server.js';
 
 async function main() {
   const container = createContainer();
-  const { logger, config, db, queue, dlq, worker, dbClose } = container;
+  const { logger, config, db, queue, dlq, oracle, worker, dbClose } = container;
 
   logger.info('Starting Puente Clos Apalta v2');
 
@@ -22,6 +22,7 @@ async function main() {
     logger,
     queue,
     dlq,
+    oracle,
     hubspotClientSecret: config.HUBSPOT_CLIENT_SECRET,
   });
   startServer(app, config.PORT, logger);

@@ -8,16 +8,18 @@ import { createErrorHandler } from './middleware/error.handler.js';
 import type { ILogger } from '../../shared/logger/logger.js';
 import type { QueueRepository } from '../../shared/queue/queue.repository.js';
 import type { DlqRepository } from '../../shared/dlq/dlq.repository.js';
+import type { IOracleClient } from '../../domain/ports/oracle.port.js';
 
 export interface ServerDeps {
   logger: ILogger;
   queue: QueueRepository;
   dlq: DlqRepository;
+  oracle: IOracleClient;
   hubspotClientSecret: string;
 }
 
 export function createServer(deps: ServerDeps) {
-  const { logger, queue, dlq, hubspotClientSecret } = deps;
+  const { logger, queue, dlq, oracle, hubspotClientSecret } = deps;
   const app = express();
 
   // Confiar en el proxy de Railway para x-forwarded-proto y x-forwarded-for
@@ -41,6 +43,18 @@ export function createServer(deps: ServerDeps) {
   // Admin/sync routes (no auth in phase 1)
   app.use(createSyncRouter(queue, logger));
   app.use(createDlqRouter(dlq, queue, logger));
+
+  // Verify route — consulta Oracle para verificar registros sincronizados
+  app.get('/verify/guest/:oracleId', async (req, res) => {
+    const result = await oracle.getGuestProfile(req.params.oracleId);
+    if (!result.ok) { res.status(500).json({ error: result.error.message }); return; }
+    res.json(result.data);
+  });
+  app.get('/verify/reservation/:oracleId', async (req, res) => {
+    const result = await oracle.getReservation(req.params.oracleId);
+    if (!result.ok) { res.status(500).json({ error: result.error.message }); return; }
+    res.json(result.data);
+  });
 
   // Global error handler
   app.use(createErrorHandler(logger));
