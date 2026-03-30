@@ -186,12 +186,24 @@ describe('parseNumberFromString', () => {
     expect(parseNumberFromString('10')).toBe(10);
   });
 
-  it('throws for non-numeric string', () => {
-    expect(() => parseNumberFromString('abc')).toThrow('Cannot parse number');
+  it('returns null for null', () => {
+    expect(parseNumberFromString(null)).toBeNull();
   });
 
-  it('throws for empty string', () => {
-    expect(() => parseNumberFromString('')).toThrow('Cannot parse number');
+  it('returns null for undefined', () => {
+    expect(parseNumberFromString(undefined)).toBeNull();
+  });
+
+  it('returns null for "null" string', () => {
+    expect(parseNumberFromString('null')).toBeNull();
+  });
+
+  it('returns null for empty string', () => {
+    expect(parseNumberFromString('')).toBeNull();
+  });
+
+  it('throws for non-numeric string', () => {
+    expect(() => parseNumberFromString('abc')).toThrow('Cannot parse number');
   });
 });
 

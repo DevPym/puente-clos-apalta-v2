@@ -73,9 +73,11 @@ export function parsePaymentMethod(hsValue: string): string {
 
 /**
  * Parses a numeric string (from HubSpot) to a number.
- * Throws if the value is not a valid integer.
+ * Returns null for null/undefined/"null"/empty values.
+ * Throws if the value is present but not a valid integer.
  */
-export function parseNumberFromString(value: string): number {
+export function parseNumberFromString(value: string | null | undefined): number | null {
+  if (value == null || value === 'null' || value === '') return null;
   const num = parseInt(value, 10);
   if (Number.isNaN(num)) {
     throw new Error(`Cannot parse number from: "${value}"`);
