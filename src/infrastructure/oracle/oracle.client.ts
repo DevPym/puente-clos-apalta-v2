@@ -459,39 +459,49 @@ export class OracleClient implements IOracleClient {
       ...(reservation.ratePlanCode && { ratePlanCode: reservation.ratePlanCode }),
       ...(reservation.arrivalDate && { start: reservation.arrivalDate }),
       ...(reservation.departureDate && { end: reservation.departureDate }),
-      numberOfUnits: reservation.numberOfRooms ?? 1,
+      numberOfUnits: String(reservation.numberOfRooms ?? 1),
       guestCounts,
       ...(reservation.amountBeforeTax && {
-        total: { amountBeforeTax: reservation.amountBeforeTax, currencyCode: reservation.currencyCode ?? 'CLP' },
+        total: { amountBeforeTax: reservation.amountBeforeTax },
       }),
     };
+
+    // Per-night rate breakdown (single period covering the full stay)
+    if (reservation.arrivalDate && reservation.departureDate) {
+      roomRate.rates = {
+        rate: [{
+          base: {
+            amountBeforeTax: reservation.amountBeforeTax ?? '0',
+            currencyCode: reservation.currencyCode ?? 'CLP',
+          },
+          start: reservation.arrivalDate,
+          end: reservation.departureDate,
+        }],
+      };
+    }
+
+    // Attach guest profiles to roomRate.stayProfiles
+    if (reservation.guestProfiles && reservation.guestProfiles.length > 0) {
+      roomRate.stayProfiles = reservation.guestProfiles.map((g) => ({
+        profileIdList: [{ id: g.oracleProfileId, type: 'Profile' }],
+        reservationProfileType: 'Company',
+      }));
+    }
 
     const roomStay: Record<string, unknown> = {
       roomRates: [roomRate],
       guestCounts,
       ...(reservation.arrivalDate && { arrivalDate: reservation.arrivalDate }),
       ...(reservation.departureDate && { departureDate: reservation.departureDate }),
-      ...(reservation.roomId && { roomId: reservation.roomId }),
     };
 
     const resObj: Record<string, unknown> = {
       roomStay,
       ...(reservation.reservationStatus && { reservationStatus: reservation.reservationStatus }),
-      ...(reservation.comments && { comments: [{ text: reservation.comments }] }),
       ...(reservation.isPseudoRoom !== undefined && { pseudoRoom: reservation.isPseudoRoom }),
     };
 
-    if (reservation.guestProfiles && reservation.guestProfiles.length > 0) {
-      resObj.reservationGuests = reservation.guestProfiles.map((g) => ({
-        profileId: { id: g.oracleProfileId, type: 'Profile' },
-        primary: g.isPrimary,
-      }));
-    }
-
-    if (reservation.travelAgentId) {
-      resObj.travelAgent = { profileId: { id: reservation.travelAgentId, type: 'CorporateId' } };
-    }
-
+    // sourceOfSale
     if (reservation.sourceCode) {
       resObj.sourceOfSale = {
         sourceCode: reservation.sourceCode,
@@ -499,8 +509,45 @@ export class OracleClient implements IOracleClient {
       };
     }
 
+    // reservationGuests — per spec: profileInfo.profile wrapper
+    if (reservation.guestProfiles && reservation.guestProfiles.length > 0) {
+      resObj.reservationGuests = reservation.guestProfiles.map((g) => ({
+        profileInfo: {
+          profileIdList: [{ id: g.oracleProfileId, type: 'Profile' }],
+        },
+        primary: g.isPrimary,
+      }));
+    }
+
+    // reservationProfiles — travel agent
+    if (reservation.travelAgentId) {
+      resObj.reservationProfiles = {
+        reservationProfile: [{
+          profileIdList: [{ id: reservation.travelAgentId, type: 'Profile' }],
+          reservationProfileType: 'TravelAgent',
+        }],
+      };
+    }
+
+    // reservationPaymentMethods — per spec: array of { paymentMethod, folioView }
     if (reservation.paymentMethod) {
-      resObj.cashiering = { paymentMethod: reservation.paymentMethod };
+      resObj.reservationPaymentMethods = [{
+        paymentMethod: reservation.paymentMethod,
+        folioView: '1',
+      }];
+    }
+
+    // comments — per spec: comments[].comment.text.value
+    if (reservation.comments) {
+      resObj.comments = [{
+        comment: {
+          text: { value: reservation.comments },
+          commentTitle: 'General Notes',
+          notificationLocation: 'RESERVATION',
+          type: 'GEN',
+          internal: false,
+        },
+      }];
     }
 
     return { reservations: { reservation: [resObj] } };
@@ -541,23 +588,60 @@ export class OracleClient implements IOracleClient {
 
   private extractReservationIds(data: unknown): ReservationIds {
     const ids: ReservationIds = { internalId: '' };
-    if (data && typeof data === 'object') {
+
+    // Find the reservationIdList — could be top-level or nested in reservations.reservation[0]
+    const idList = this.findReservationIdList(data);
+    if (idList) {
+      for (const item of idList) {
+        if (typeof item === 'object' && item !== null) {
+          const entry = item as Record<string, unknown>;
+          if (typeof entry.type === 'string' && typeof entry.id === 'string') {
+            if (entry.type === 'Reservation') ids.internalId = entry.id;
+            if (entry.type === 'Confirmation') ids.confirmationId = entry.id;
+            if (entry.type === 'CancellationNumber') ids.cancellationId = entry.id;
+          }
+        }
+      }
+    }
+
+    // Fallback: extract from HATEOAS links
+    if (!ids.internalId && data && typeof data === 'object') {
       const d = data as Record<string, unknown>;
-      if (Array.isArray(d.reservationIdList)) {
-        for (const item of d.reservationIdList) {
-          if (typeof item === 'object' && item !== null) {
-            const entry = item as Record<string, unknown>;
-            if (typeof entry.type === 'string' && typeof entry.id === 'string') {
-              if (entry.type === 'Reservation') ids.internalId = entry.id;
-              if (entry.type === 'Confirmation') ids.confirmationId = entry.id;
-              if (entry.type === 'CancellationNumber') ids.cancellationId = entry.id;
+      if (Array.isArray(d.links)) {
+        for (const link of d.links as unknown[]) {
+          if (typeof link === 'object' && link !== null) {
+            const l = link as Record<string, unknown>;
+            if (l.rel === 'self' && typeof l.href === 'string') {
+              const segments = l.href.split('/');
+              const id = segments[segments.length - 1];
+              if (id) { ids.internalId = id; break; }
             }
           }
         }
       }
     }
+
     if (!ids.internalId) throw new Error('Could not extract reservation ID from Oracle response');
     return ids;
+  }
+
+  private findReservationIdList(data: unknown): unknown[] | null {
+    if (!data || typeof data !== 'object') return null;
+    const d = data as Record<string, unknown>;
+
+    // Top-level reservationIdList
+    if (Array.isArray(d.reservationIdList)) return d.reservationIdList;
+
+    // Nested: reservations.reservation[0].reservationIdList
+    if (d.reservations && typeof d.reservations === 'object') {
+      const res = d.reservations as Record<string, unknown>;
+      if (Array.isArray(res.reservation) && res.reservation.length > 0) {
+        const first = res.reservation[0] as Record<string, unknown>;
+        if (Array.isArray(first.reservationIdList)) return first.reservationIdList;
+      }
+    }
+
+    return null;
   }
 
   private extractId(data: unknown, key: string): string {

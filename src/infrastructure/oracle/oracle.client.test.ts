@@ -310,15 +310,29 @@ describe('OracleClient', () => {
 
       const callPayload = httpRequest.mock.calls[0][0].data;
       const res = callPayload.reservations.reservation[0];
-      expect(res.travelAgent.profileId.id).toBe('AGENT-001');
-      expect(res.cashiering.paymentMethod).toBe('VA');
-      expect(res.comments[0].text).toBe('VIP guest');
-      // Verify guestCounts are strings and appear in both roomRates and roomStay
+
+      // reservationProfiles for travel agent
+      expect(res.reservationProfiles.reservationProfile[0].profileIdList[0].id).toBe('AGENT-001');
+      expect(res.reservationProfiles.reservationProfile[0].reservationProfileType).toBe('TravelAgent');
+
+      // reservationPaymentMethods
+      expect(res.reservationPaymentMethods[0].paymentMethod).toBe('VA');
+      expect(res.reservationPaymentMethods[0].folioView).toBe('1');
+
+      // comments with nested structure
+      expect(res.comments[0].comment.text.value).toBe('VIP guest');
+      expect(res.comments[0].comment.type).toBe('GEN');
+
+      // guestCounts are strings in both roomRates and roomStay
       expect(res.roomStay.guestCounts).toEqual({ adults: '2', children: '0' });
       expect(res.roomStay.roomRates[0].guestCounts).toEqual({ adults: '2', children: '0' });
-      expect(res.roomStay.roomRates[0].numberOfUnits).toBe(1);
+      expect(res.roomStay.roomRates[0].numberOfUnits).toBe('1');
       expect(res.roomStay.roomRates[0].start).toBe('2026-07-01');
       expect(res.roomStay.roomRates[0].end).toBe('2026-07-05');
+
+      // reservationGuests with profileInfo wrapper
+      expect(res.reservationGuests[0].profileInfo.profileIdList[0].id).toBe('ORACLE-123');
+      expect(res.reservationGuests[0].primary).toBe(true);
     });
   });
 
