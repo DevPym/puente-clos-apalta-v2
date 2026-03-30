@@ -40,4 +40,7 @@ export interface IOracleClient {
 
   // ── Appointment: Cashiering ──
   postBillingCharge(charge: OracleBillingCharge): Promise<Result<void, OracleApiError>>;
+
+  // ── Front Desk: TravelAgent ──
+  associateTravelAgent(reservationId: string, agentProfileId: string): Promise<Result<void, OracleApiError>>;
 }

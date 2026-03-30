@@ -224,6 +224,25 @@ export class OracleClient implements IOracleClient {
     return this.request('POST', `/hotels/${hotelId}/reservations/${charge.reservationId}/charges`, payload, () => undefined);
   }
 
+  // ── Front Desk: TravelAgent ──
+
+  async associateTravelAgent(reservationId: string, agentProfileId: string): Promise<Result<void, OracleApiError>> {
+    const hotelId = this.config.hotelId;
+    // Front Desk Operations API — PUT /fof/v1/hotels/{hotelId}/commissionAgent/{agentId}/commissions
+    const payload = {
+      commissionAgent: {
+        commissionAgentType: 'Agent',
+        id: agentProfileId,
+        type: 'Profile',
+      },
+      reservations: {
+        reservationId: [{ id: reservationId, type: 'Reservation' }],
+        hotelId,
+      },
+    };
+    return this.request('PUT', `/fof/v1/hotels/${hotelId}/commissionAgent/${agentProfileId}/commissions`, payload, () => undefined);
+  }
+
   // ── Private helpers ──
 
   private async request<T>(

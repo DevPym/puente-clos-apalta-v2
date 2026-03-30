@@ -53,6 +53,7 @@ function createDeps(
     createServiceRequest: vi.fn(),
     updateServiceRequest: vi.fn(),
     postBillingCharge: vi.fn(),
+    associateTravelAgent: vi.fn().mockResolvedValue({ ok: true, data: undefined }),
     ...oracleOverrides,
   } as IOracleClient;
 
@@ -125,7 +126,7 @@ describe('processDeal', () => {
     expect(deps.oracle.createReservation).not.toHaveBeenCalled();
   });
 
-  it('includes travel agent when company has id_oracle', async () => {
+  it('associates travel agent via Front Desk API when company has id_oracle', async () => {
     const deps = createDeps({}, {
       getCompanyByDealId: vi.fn().mockResolvedValue({
         ok: true,
@@ -135,8 +136,8 @@ describe('processDeal', () => {
 
     await processDeal(deps, { objectId: '201' });
 
-    const createCall = (deps.oracle.createReservation as ReturnType<typeof vi.fn>).mock.calls[0][0];
-    expect(createCall.travelAgentId).toBe('AGENT-001');
+    // TravelAgent is associated via separate Front Desk API call
+    expect(deps.oracle.associateTravelAgent).toHaveBeenCalledWith('RES-001', 'AGENT-001');
   });
 
   it('sets first guest as primary when no label matches', async () => {

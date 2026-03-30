@@ -61,34 +61,49 @@ export async function processDeal(
   // 4. Map and send to Oracle
   const reservation = mapHsDealToReservation({ deal, guestProfiles, travelAgentId });
 
+  let oracleResId: string;
+
   if (deal.id_oracle) {
     // Update existing reservation
     const updateResult = await oracle.updateReservation(deal.id_oracle, reservation);
     if (!updateResult.ok) throw updateResult.error;
-    logger.info('Updated Oracle reservation', { objectId: payload.objectId, oracleId: deal.id_oracle });
-    return { oracleId: deal.id_oracle };
+    oracleResId = deal.id_oracle;
+    logger.info('Updated Oracle reservation', { objectId: payload.objectId, oracleId: oracleResId });
+  } else {
+    // Create new reservation
+    const createResult = await oracle.createReservation(reservation);
+    if (!createResult.ok) throw createResult.error;
+
+    const ids = createResult.data;
+    oracleResId = ids.internalId;
+
+    // 5. Write back Oracle IDs to HubSpot
+    const writebackResult = await hubspot.updateDeal(payload.objectId, {
+      id_oracle: ids.internalId,
+      'numero_de_reserva_': ids.confirmationId ?? null,
+      confirmation_number__oracle: ids.confirmationId ?? null,
+    });
+    if (!writebackResult.ok) {
+      logger.error(`Failed to write Oracle IDs back to HubSpot deal ${payload.objectId}: ${writebackResult.error.code} — ${writebackResult.error.message}`);
+    }
+
+    logger.info('Created Oracle reservation', {
+      objectId: payload.objectId,
+      oracleId: ids.internalId,
+      confirmationId: ids.confirmationId,
+    });
   }
 
-  // Create new reservation
-  const createResult = await oracle.createReservation(reservation);
-  if (!createResult.ok) throw createResult.error;
-
-  const ids = createResult.data;
-
-  // 5. Write back Oracle IDs to HubSpot
-  const writebackResult = await hubspot.updateDeal(payload.objectId, {
-    id_oracle: ids.internalId,
-    'numero_de_reserva_': ids.confirmationId ?? null,
-    confirmation_number__oracle: ids.confirmationId ?? null,
-  });
-  if (!writebackResult.ok) {
-    logger.error(`Failed to write Oracle IDs back to HubSpot deal ${payload.objectId}: ${writebackResult.error.code} — ${writebackResult.error.message}`);
+  // 6. Associate TravelAgent via Front Desk API (separate from reservation POST/PUT)
+  if (travelAgentId) {
+    const agentResult = await oracle.associateTravelAgent(oracleResId, travelAgentId);
+    if (!agentResult.ok) {
+      // Non-fatal: log but don't throw — reservation was already created successfully
+      logger.error(`Failed to associate TravelAgent ${travelAgentId} to reservation ${oracleResId}: ${agentResult.error.message}`);
+    } else {
+      logger.info('Associated TravelAgent to reservation', { oracleResId, travelAgentId });
+    }
   }
 
-  logger.info('Created Oracle reservation', {
-    objectId: payload.objectId,
-    oracleId: ids.internalId,
-    confirmationId: ids.confirmationId,
-  });
-  return { oracleId: ids.internalId };
+  return { oracleId: oracleResId };
 }
