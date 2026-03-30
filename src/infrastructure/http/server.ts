@@ -20,6 +20,9 @@ export function createServer(deps: ServerDeps) {
   const { logger, queue, dlq, hubspotClientSecret } = deps;
   const app = express();
 
+  // Confiar en el proxy de Railway para x-forwarded-proto y x-forwarded-for
+  app.set('trust proxy', 1);
+
   // Raw body capture for webhook signature verification
   app.use(express.json({
     verify: (req, _res, buf) => {
