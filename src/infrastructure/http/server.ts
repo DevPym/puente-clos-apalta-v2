@@ -55,10 +55,11 @@ export function createServer(deps: ServerDeps) {
     if (!result.ok) { res.status(500).json({ error: result.error.message }); return; }
     res.json(result.data);
   });
-  // Raw Oracle API proxy — GET any Oracle path for debugging
-  // Express 5 requires named params: use :path+ for catch-all
-  app.get('/verify/raw/:path+', async (req, res) => {
-    const oraclePath = '/' + (req.params as Record<string, string>)['path+'];
+  // Raw Oracle API proxy — query param instead of path (Express 5 compat)
+  // Usage: /verify/raw?path=/crm/v1/profiles/12345
+  app.get('/verify/raw', async (req, res) => {
+    const oraclePath = req.query.path as string;
+    if (!oraclePath) { res.status(400).json({ error: 'Missing ?path= query param' }); return; }
     const result = await oracle.rawGet(oraclePath);
     if (!result.ok) { res.status(500).json({ error: result.error.message, code: result.error.code }); return; }
     res.json(result.data);
