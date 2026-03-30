@@ -450,66 +450,60 @@ export class OracleClient implements IOracleClient {
   }
 
   private buildReservationPayload(reservation: Partial<OracleReservation>): Record<string, unknown> {
-    const roomStay: Record<string, unknown> = {};
+    const adults = reservation.adults !== undefined ? String(reservation.adults) : '1';
+    const children = reservation.children !== undefined ? String(reservation.children) : '0';
+    const guestCounts = { adults, children };
 
-    if (reservation.arrivalDate || reservation.departureDate || reservation.roomType || reservation.ratePlanCode) {
-      roomStay.roomRates = [{
-        ...(reservation.roomType && { roomType: reservation.roomType }),
-        ...(reservation.ratePlanCode && { ratePlanCode: reservation.ratePlanCode }),
-        ...(reservation.amountBeforeTax && {
-          total: { amountBeforeTax: reservation.amountBeforeTax, currencyCode: reservation.currencyCode ?? 'CLP' },
-        }),
-      }];
-    }
-
-    if (reservation.arrivalDate) roomStay.arrivalDate = reservation.arrivalDate;
-    if (reservation.departureDate) roomStay.departureDate = reservation.departureDate;
-    if (reservation.numberOfRooms !== undefined) roomStay.numberOfRooms = reservation.numberOfRooms;
-    if (reservation.roomId) roomStay.roomId = reservation.roomId;
-
-    if (reservation.adults !== undefined || reservation.children !== undefined) {
-      roomStay.guestCounts = {
-        ...(reservation.adults !== undefined && { adults: reservation.adults }),
-        ...(reservation.children !== undefined && { children: reservation.children }),
-      };
-    }
-
-    const payload: Record<string, unknown> = {
-      reservations: {
-        reservation: {
-          roomStay,
-          ...(reservation.reservationStatus && { reservationStatus: reservation.reservationStatus }),
-          ...(reservation.comments && { comments: [{ text: reservation.comments }] }),
-          ...(reservation.isPseudoRoom !== undefined && { pseudoRoom: reservation.isPseudoRoom }),
-        },
-      },
+    const roomRate: Record<string, unknown> = {
+      ...(reservation.roomType && { roomType: reservation.roomType }),
+      ...(reservation.ratePlanCode && { ratePlanCode: reservation.ratePlanCode }),
+      ...(reservation.arrivalDate && { start: reservation.arrivalDate }),
+      ...(reservation.departureDate && { end: reservation.departureDate }),
+      numberOfUnits: reservation.numberOfRooms ?? 1,
+      guestCounts,
+      ...(reservation.amountBeforeTax && {
+        total: { amountBeforeTax: reservation.amountBeforeTax, currencyCode: reservation.currencyCode ?? 'CLP' },
+      }),
     };
 
-    const res = (payload.reservations as Record<string, unknown>).reservation as Record<string, unknown>;
+    const roomStay: Record<string, unknown> = {
+      roomRates: [roomRate],
+      guestCounts,
+      ...(reservation.arrivalDate && { arrivalDate: reservation.arrivalDate }),
+      ...(reservation.departureDate && { departureDate: reservation.departureDate }),
+      ...(reservation.roomId && { roomId: reservation.roomId }),
+    };
+
+    const resObj: Record<string, unknown> = {
+      roomStay,
+      ...(reservation.reservationStatus && { reservationStatus: reservation.reservationStatus }),
+      ...(reservation.comments && { comments: [{ text: reservation.comments }] }),
+      ...(reservation.isPseudoRoom !== undefined && { pseudoRoom: reservation.isPseudoRoom }),
+    };
 
     if (reservation.guestProfiles && reservation.guestProfiles.length > 0) {
-      res.reservationGuests = reservation.guestProfiles.map((g) => ({
+      resObj.reservationGuests = reservation.guestProfiles.map((g) => ({
         profileId: { id: g.oracleProfileId, type: 'Profile' },
         primary: g.isPrimary,
       }));
     }
 
     if (reservation.travelAgentId) {
-      res.travelAgent = { profileId: { id: reservation.travelAgentId, type: 'CorporateId' } };
+      resObj.travelAgent = { profileId: { id: reservation.travelAgentId, type: 'CorporateId' } };
     }
 
     if (reservation.sourceCode) {
-      res.sourceOfSale = {
+      resObj.sourceOfSale = {
         sourceCode: reservation.sourceCode,
         sourceType: reservation.sourceType ?? 'PMS',
       };
     }
 
     if (reservation.paymentMethod) {
-      res.cashiering = { paymentMethod: reservation.paymentMethod };
+      resObj.cashiering = { paymentMethod: reservation.paymentMethod };
     }
 
-    return payload;
+    return { reservations: { reservation: [resObj] } };
   }
 
   private extractProfileId(data: unknown): string {

@@ -309,10 +309,16 @@ describe('OracleClient', () => {
       await client.createReservation(resWithAgent);
 
       const callPayload = httpRequest.mock.calls[0][0].data;
-      const res = callPayload.reservations.reservation;
+      const res = callPayload.reservations.reservation[0];
       expect(res.travelAgent.profileId.id).toBe('AGENT-001');
       expect(res.cashiering.paymentMethod).toBe('VA');
       expect(res.comments[0].text).toBe('VIP guest');
+      // Verify guestCounts are strings and appear in both roomRates and roomStay
+      expect(res.roomStay.guestCounts).toEqual({ adults: '2', children: '0' });
+      expect(res.roomStay.roomRates[0].guestCounts).toEqual({ adults: '2', children: '0' });
+      expect(res.roomStay.roomRates[0].numberOfUnits).toBe(1);
+      expect(res.roomStay.roomRates[0].start).toBe('2026-07-01');
+      expect(res.roomStay.roomRates[0].end).toBe('2026-07-05');
     });
   });
 
