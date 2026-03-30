@@ -3,10 +3,16 @@ import type { OracleResStatus, OracleProfileType } from './oracle.types.js';
 // ── Reservation Status ──
 
 export const ReservationStatusMap: Record<string, OracleResStatus> = {
+  // HubSpot labels
   'Confirmada': 'Reserved',
   'Hospedado': 'InHouse',
   'Salida': 'CheckedOut',
   'Cancelada': 'Cancelled',
+  // Oracle codes (pass-through)
+  'Reserved': 'Reserved',
+  'InHouse': 'InHouse',
+  'CheckedOut': 'CheckedOut',
+  'Cancelled': 'Cancelled',
 };
 
 // ── Source Code (reservation source) ──
@@ -60,9 +66,14 @@ export const RoomTypeMap: Record<string, string> = {
 // Always use BAR codes directly.
 
 export const RatePlanMap: Record<string, string> = {
+  // HubSpot labels
   'Half Board': 'BARHB',
   'Overnight': 'BAROV',
   'Full board': 'BARFB',
+  // Oracle codes (pass-through)
+  'BARHB': 'BARHB',
+  'BAROV': 'BAROV',
+  'BARFB': 'BARFB',
 };
 
 // ── Meal Transaction Codes (Cashiering) ──

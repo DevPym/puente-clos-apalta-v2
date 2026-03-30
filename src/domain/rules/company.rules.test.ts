@@ -90,6 +90,13 @@ describe('mapReservationStatus', () => {
     expect(mapReservationStatus('Cancelada')).toBe('Cancelled');
   });
 
+  it('passes through Oracle codes directly', () => {
+    expect(mapReservationStatus('Reserved')).toBe('Reserved');
+    expect(mapReservationStatus('InHouse')).toBe('InHouse');
+    expect(mapReservationStatus('CheckedOut')).toBe('CheckedOut');
+    expect(mapReservationStatus('Cancelled')).toBe('Cancelled');
+  });
+
   it('throws for unknown status', () => {
     expect(() => mapReservationStatus('Desconocido')).toThrow('Unknown reservation status');
   });
@@ -118,7 +125,15 @@ describe('parseSourceCode', () => {
     expect(parseSourceCode('Hubspot (HS)')).toBe('HS');
   });
 
-  it('throws for value without parentheses', () => {
+  it('returns direct Oracle code when value is a valid code', () => {
+    expect(parseSourceCode('HS')).toBe('HS');
+    expect(parseSourceCode('WLK')).toBe('WLK');
+    expect(parseSourceCode('GDS')).toBe('GDS');
+    expect(parseSourceCode('OTA')).toBe('OTA');
+    expect(parseSourceCode('WSBE')).toBe('WSBE');
+  });
+
+  it('throws for value without parentheses and not a valid code', () => {
     expect(() => parseSourceCode('Direct')).toThrow('Cannot parse source code');
   });
 });
@@ -142,7 +157,16 @@ describe('parsePaymentMethod', () => {
     expect(parsePaymentMethod('None (NON)')).toBe('NON');
   });
 
-  it('throws for value without parentheses', () => {
+  it('returns direct Oracle code when value is a valid code', () => {
+    expect(parsePaymentMethod('CASH')).toBe('CASH');
+    expect(parsePaymentMethod('BTR')).toBe('BTR');
+    expect(parsePaymentMethod('INV')).toBe('INV');
+    expect(parsePaymentMethod('MC')).toBe('MC');
+    expect(parsePaymentMethod('VA')).toBe('VA');
+    expect(parsePaymentMethod('NON')).toBe('NON');
+  });
+
+  it('throws for value without parentheses and not a valid code', () => {
     expect(() => parsePaymentMethod('Cash')).toThrow('Cannot parse payment method');
   });
 });

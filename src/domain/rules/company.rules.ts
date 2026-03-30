@@ -41,26 +41,32 @@ export function mapReservationStatus(hsStatus: string): OracleResStatus {
   return mapped;
 }
 
+const VALID_SOURCE_CODES = new Set(['WLK', 'GDS', 'OTA', 'WSBE', 'HS']);
+
 /**
  * Extracts the source code from a HubSpot enum value.
- * Example: "Walk-in (WLK)" → "WLK"
+ * Accepts direct Oracle codes (e.g. "HS") or label format (e.g. "Walk-in (WLK)").
  */
 export function parseSourceCode(hsValue: string): string {
+  if (VALID_SOURCE_CODES.has(hsValue)) return hsValue;
   const match = /\((\w+)\)$/.exec(hsValue);
   if (!match) {
-    throw new Error(`Cannot parse source code from: "${hsValue}". Expected format: "Label (CODE)"`);
+    throw new Error(`Cannot parse source code from: "${hsValue}". Expected: Oracle code or "Label (CODE)"`);
   }
   return match[1];
 }
 
+const VALID_PAYMENT_CODES = new Set(['CASH', 'BTR', 'INV', 'MC', 'VA', 'NON']);
+
 /**
  * Extracts the payment method code from a HubSpot enum value.
- * Example: "Visa (VI)" → "VI"
+ * Accepts direct Oracle codes (e.g. "VA") or label format (e.g. "Visa (VI)").
  */
 export function parsePaymentMethod(hsValue: string): string {
+  if (VALID_PAYMENT_CODES.has(hsValue)) return hsValue;
   const match = /\((\w+)\)$/.exec(hsValue);
   if (!match) {
-    throw new Error(`Cannot parse payment method from: "${hsValue}". Expected format: "Label (CODE)"`);
+    throw new Error(`Cannot parse payment method from: "${hsValue}". Expected: Oracle code or "Label (CODE)"`);
   }
   return match[1];
 }
