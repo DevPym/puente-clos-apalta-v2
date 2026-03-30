@@ -52,7 +52,7 @@ function isDuplicate(objectId: number, subscriptionType: string): boolean {
 export function createWebhookRouter(queue: QueueRepository, logger: ILogger): Router {
   const router = Router();
 
-  router.post('/webhook/hubspot', async (req, res) => {
+  router.post('/hubspot', async (req, res) => {
     const parsed = webhookBodySchema.safeParse(req.body);
     if (!parsed.success) {
       logger.warn('Invalid webhook payload', { error: parsed.error.flatten() });

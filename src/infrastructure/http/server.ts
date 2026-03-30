@@ -33,7 +33,7 @@ export function createServer(deps: ServerDeps) {
   // Webhook route (with HubSpot signature verification)
   const webhookVerify = createWebhookVerifyMiddleware(hubspotClientSecret);
   const webhookRouter = createWebhookRouter(queue, logger);
-  app.use(webhookVerify, webhookRouter);
+  app.use('/webhook', webhookVerify, webhookRouter);
 
   // Admin/sync routes (no auth in phase 1)
   app.use(createSyncRouter(queue, logger));
