@@ -158,4 +158,47 @@ Target: ES2022, Module: NodeNext, strict: true, noUnusedLocals, noUnusedParamete
 - Build: `npm run build` → Start: `node dist/index.js`
 - PostgreSQL addon with auto-injected `DATABASE_URL`
 - Health check: `GET /health`
+- Webhook URL: `https://puente-clos-apalta-v2-production.up.railway.app/webhook/hubspot`
 - PORT is dynamic (Railway injects as string, Zod coerces to number)
+
+## Verified Live (2026-03-30)
+
+| Flujo | Estado | Notas |
+|---|---|---|
+| Contact → Oracle Guest Profile | ✅ | CREATE + UPDATE via webhook |
+| Company → Oracle Agent/Company Profile | ✅ | CREATE + UPDATE via webhook |
+| Deal → Oracle Reservation | ✅ | CREATE + UPDATE. Guests, rooms, rates, payment |
+| Appointment → Oracle (4 APIs) | ✅ | Messages, Service Requests, Billing, Activities |
+| Webhooks HubSpot → Railway | ✅ | HMAC v3 verificado, sin Invalid payload |
+| Deal cancellation | ⚠️ | Payload corregido, usa confirmation_number__oracle |
+
+## Limitaciones conocidas v1
+
+### TravelAgent en Reservation
+Oracle OHIP Property API (`/rsv/v1/`) NO soporta la vinculación de perfiles TravelAgent/Agent a reservas via POST/PUT. Oracle acepta el payload sin error pero ignora silenciosamente los perfiles Agent. Verificado en producción con 5 formatos diferentes (reservationProfiles, reservationGuests, stayProfiles).
+
+**Workaround:** Vincular TravelAgent manualmente en Oracle UI después de que el puente cree la reserva.
+
+**Solución v2:** Investigar Oracle Distribution API (`/rsv-ext/v1/`) que tiene un schema diferente para perfiles, o implementar Oracle Business Events (webhooks outbound) para sincronizar cuando un TA se vincula desde la UI.
+
+### Activity Types
+Los 14 tipos de actividades del hotel no están creados en Oracle Back Office. Las actividades se envían como Guest Messages (workaround).
+
+### Dietary Preferences / Service Request Codes
+`getDietaryPreferencesLOV` y `getServiceRequestCodesLOV` devuelven 0 items en Oracle. Se envían como texto libre.
+
+### Confirmation Number writeback
+El `extractReservationIds` puede no extraer el Confirmation Number correctamente en todos los casos. Se recomienda verificar `confirmation_number__oracle` en HubSpot después de crear una reserva.
+
+## IDs de prueba verificados (2026-03-30)
+
+```
+HubSpot:
+  contactId  = 212513120257  (Prueba Prueba)    → Oracle: 37519082
+  companyId  = 53425551895   (Ekatours)          → Oracle: 37522366
+  dealId     = 58560207652   (Reserva test)      → Oracle: 42874282
+  appointmentId = 543784959890
+
+Oracle Hotel: CAR (Clos Apalta)
+Appointment objectTypeId: 0-421
+```

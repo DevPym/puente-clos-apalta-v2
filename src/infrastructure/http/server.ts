@@ -8,18 +8,16 @@ import { createErrorHandler } from './middleware/error.handler.js';
 import type { ILogger } from '../../shared/logger/logger.js';
 import type { QueueRepository } from '../../shared/queue/queue.repository.js';
 import type { DlqRepository } from '../../shared/dlq/dlq.repository.js';
-import type { IOracleClient } from '../../domain/ports/oracle.port.js';
 
 export interface ServerDeps {
   logger: ILogger;
   queue: QueueRepository;
   dlq: DlqRepository;
-  oracle: IOracleClient;
   hubspotClientSecret: string;
 }
 
 export function createServer(deps: ServerDeps) {
-  const { logger, queue, dlq, oracle, hubspotClientSecret } = deps;
+  const { logger, queue, dlq, hubspotClientSecret } = deps;
   const app = express();
 
   // Confiar en el proxy de Railway para x-forwarded-proto y x-forwarded-for
@@ -43,120 +41,6 @@ export function createServer(deps: ServerDeps) {
   // Admin/sync routes (no auth in phase 1)
   app.use(createSyncRouter(queue, logger));
   app.use(createDlqRouter(dlq, queue, logger));
-
-  // Verify routes — consulta Oracle para verificar registros sincronizados
-  app.get('/verify/guest/:oracleId', async (req, res) => {
-    const result = await oracle.getGuestProfile(req.params.oracleId);
-    if (!result.ok) { res.status(500).json({ error: result.error.message }); return; }
-    res.json(result.data);
-  });
-  app.get('/verify/reservation/:oracleId', async (req, res) => {
-    const result = await oracle.getReservation(req.params.oracleId);
-    if (!result.ok) { res.status(500).json({ error: result.error.message }); return; }
-    res.json(result.data);
-  });
-  // Raw Oracle API proxy — query param instead of path (Express 5 compat)
-  // Usage: /verify/raw?path=/crm/v1/profiles/12345
-  app.get('/verify/raw', async (req, res) => {
-    const oraclePath = req.query.path as string;
-    if (!oraclePath) { res.status(400).json({ error: 'Missing ?path= query param' }); return; }
-    const result = await oracle.rawGet(oraclePath);
-    if (!result.ok) { res.status(500).json({ error: result.error.message, code: result.error.code }); return; }
-    res.json(result.data);
-  });
-
-  // Test endpoint — probar diferentes formatos de TravelAgent payload contra Oracle
-  // Usage: GET /test/travel-agent?resId=42872642&agentId=37522366&format=1
-  app.get('/test/travel-agent', async (req, res) => {
-    const resId = req.query.resId as string;
-    const agentId = req.query.agentId as string;
-    const format = req.query.format as string ?? '1';
-    if (!resId || !agentId) {
-      res.status(400).json({ error: 'Missing ?resId= and ?agentId=' });
-      return;
-    }
-
-    // Probar con array (como POST) y con wrapper mínimo
-    const payloads: Record<string, unknown> = {
-      // Formato 1: array wrapper (como funciona en nuestro PUT de deal) + reservationProfiles
-      '1': {
-        reservations: { reservation: [{
-          reservationProfiles: {
-            reservationProfile: [{
-              profileIdList: [{ id: agentId, type: 'Profile' }],
-              reservationProfileType: 'TravelAgent',
-            }],
-          },
-          sourceOfSale: { sourceCode: 'HS', sourceType: 'PMS' },
-        }] },
-      },
-      // Formato 2: array + reservationGuests Agent
-      '2': {
-        reservations: { reservation: [{
-          reservationGuests: [{
-            profileInfo: {
-              profileIdList: [{ id: agentId, type: 'Profile' }],
-              profile: { profileType: 'Agent' },
-            },
-          }],
-          sourceOfSale: { sourceCode: 'HS', sourceType: 'PMS' },
-        }] },
-      },
-      // Formato 3: array + reservationGuests TravelAgent + reservationProfileType
-      '3': {
-        reservations: { reservation: [{
-          reservationGuests: [{
-            profileInfo: {
-              profileIdList: [{ id: agentId, type: 'Profile' }],
-            },
-            reservationProfileType: 'TravelAgent',
-          }],
-          sourceOfSale: { sourceCode: 'HS', sourceType: 'PMS' },
-        }] },
-      },
-      // Formato 4: array + stayProfiles TravelAgent en roomRate
-      '4': {
-        reservations: { reservation: [{
-          roomStay: {
-            roomRates: [{
-              stayProfiles: [{
-                profileIdList: [{ id: agentId, type: 'Profile' }],
-                reservationProfileType: 'TravelAgent',
-              }],
-            }],
-          },
-          sourceOfSale: { sourceCode: 'HS', sourceType: 'PMS' },
-        }] },
-      },
-      // Formato 5: reservationProfiles + commissionPayoutTo
-      '5': {
-        reservations: { reservation: [{
-          reservationProfiles: {
-            reservationProfile: [{
-              profileIdList: [{ id: agentId, type: 'Profile' }],
-              reservationProfileType: 'TravelAgent',
-            }],
-            commissionPayoutTo: 'TravelAgent',
-          },
-          sourceOfSale: { sourceCode: 'HS', sourceType: 'PMS' },
-        }] },
-      },
-    };
-
-    const payload = payloads[format];
-    if (!payload) {
-      res.status(400).json({ error: `Invalid format. Valid: 1-5`, formats: Object.keys(payloads) });
-      return;
-    }
-
-    try {
-      const result = await oracle.rawPut(`/rsv/v1/hotels/CAR/reservations/${resId}`, payload);
-      res.json({ format, payload, oracleResponse: result });
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      res.status(500).json({ format, payload, error: msg });
-    }
-  });
 
   // Global error handler
   app.use(createErrorHandler(logger));

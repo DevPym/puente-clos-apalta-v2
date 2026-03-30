@@ -312,17 +312,10 @@ describe('OracleClient', () => {
       const callPayload = httpRequest.mock.calls[0][0].data;
       const res = callPayload.reservations.reservation[0];
 
-      // TravelAgent goes inside reservationGuests — Oracle uses "Agent" profileType
-      const taGuest = res.reservationGuests.find(
-        (g: Record<string, unknown>) => {
-          const pi = g.profileInfo as Record<string, unknown>;
-          const prof = pi.profile as Record<string, string> | undefined;
-          return prof?.profileType === 'Agent';
-        },
-      );
-      expect(taGuest).toBeDefined();
-      expect(taGuest.profileInfo.profileIdList[0].id).toBe('AGENT-001');
-      expect(taGuest.profileInfo.profile.profileType).toBe('Agent');
+      // TravelAgent is NOT sent to Oracle — Property API ignores it silently.
+      // Verified in production: Oracle OHIP /rsv/v1/ does not support Agent profile
+      // attachment via POST/PUT. Must be linked manually or via Distribution API.
+      // travelAgentId is preserved in domain model for future v2 support.
 
       // reservationPaymentMethods
       expect(res.reservationPaymentMethods[0].paymentMethod).toBe('VA');

@@ -83,19 +83,6 @@ export class OracleClient implements IOracleClient {
   async createReservation(reservation: OracleReservation): Promise<Result<ReservationIds, OracleApiError>> {
     const payload = this.buildReservationPayload(reservation);
     const hotelId = this.config.hotelId;
-    // Debug: log if TravelAgent is in payload
-    const resObj = (payload as Record<string, unknown>).reservations as Record<string, unknown>;
-    const resArr = resObj?.reservation as Record<string, unknown>[];
-    const guests = resArr?.[0]?.reservationGuests as unknown[];
-    this.logger.info('createReservation payload debug', {
-      travelAgentId: reservation.travelAgentId ?? 'NONE',
-      guestCount: guests?.length ?? 0,
-      hasAgent: guests?.some((g: unknown) => {
-        const pi = (g as Record<string, unknown>).profileInfo as Record<string, unknown>;
-        const prof = pi?.profile as Record<string, string>;
-        return prof?.profileType === 'Agent';
-      }) ?? false,
-    });
     return this.request('POST', `/rsv/v1/hotels/${hotelId}/reservations`, payload, (data) => {
       return this.extractReservationIds(data);
     });
@@ -235,16 +222,6 @@ export class OracleClient implements IOracleClient {
       }],
     };
     return this.request('POST', `/hotels/${hotelId}/reservations/${charge.reservationId}/charges`, payload, () => undefined);
-  }
-
-  // ── Debug ──
-
-  async rawGet(path: string): Promise<Result<unknown, OracleApiError>> {
-    return this.request('GET', path, undefined, (data) => data);
-  }
-
-  async rawPut(path: string, payload: unknown): Promise<Result<unknown, OracleApiError>> {
-    return this.request('PUT', path, payload, (data) => data);
   }
 
   // ── Private helpers ──
@@ -547,34 +524,21 @@ export class OracleClient implements IOracleClient {
       sourceType: reservation.sourceType ?? 'PMS',
     };
 
-    // reservationGuests — guests + travel agent (all go in this array per OHIP Property API)
-    const guests: Record<string, unknown>[] = [];
-
+    // reservationGuests — guest profiles linked to the reservation
     if (reservation.guestProfiles && reservation.guestProfiles.length > 0) {
-      for (const g of reservation.guestProfiles) {
-        guests.push({
-          profileInfo: {
-            profileIdList: [{ id: g.oracleProfileId, type: 'Profile' }],
-          },
-          primary: g.isPrimary,
-        });
-      }
-    }
-
-    // TravelAgent — goes inside reservationGuests per OHIP Property API
-    // Oracle uses profileType "Agent" internally (not "TravelAgent")
-    if (reservation.travelAgentId) {
-      guests.push({
+      resObj.reservationGuests = reservation.guestProfiles.map((g) => ({
         profileInfo: {
-          profileIdList: [{ id: reservation.travelAgentId, type: 'Profile' }],
-          profile: { profileType: 'Agent' },
+          profileIdList: [{ id: g.oracleProfileId, type: 'Profile' }],
         },
-      });
+        primary: g.isPrimary,
+      }));
     }
 
-    if (guests.length > 0) {
-      resObj.reservationGuests = guests;
-    }
+    // NOTE: TravelAgent attachment is NOT supported by Oracle OHIP Property API
+    // (/rsv/v1/). Oracle silently ignores Agent profiles in POST/PUT payloads.
+    // TravelAgent must be linked manually in Oracle UI or via Distribution API
+    // (/rsv-ext/v1/) which is a v2 feature.
+    // The travelAgentId field is preserved in the domain model for future use.
 
     // reservationPaymentMethods — required by Oracle, default to CASH
     resObj.reservationPaymentMethods = [{
