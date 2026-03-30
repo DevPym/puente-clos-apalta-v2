@@ -11,10 +11,11 @@ const APPOINTMENT_OBJECT_TYPE_ID = '0-421';
 // Los que no mapeamos a un job se ignoran silenciosamente (no 400).
 const webhookEventSchema = z.object({
   objectId: z.number(),
-  subscriptionType: z.string(),       // flexible: contact.creation, object.creation, etc.
-  objectTypeId: z.string().optional(), // presente en object.* events (ej: "0-421" para appointments)
-  propertyName: z.string().optional(),
-  propertyValue: z.string().optional(),
+  subscriptionType: z.string(),
+  objectTypeId: z.string().optional(),
+  // HubSpot envía null (no undefined) en propertyName/propertyValue para creation/deletion events
+  propertyName: z.string().nullable().optional(),
+  propertyValue: z.string().nullable().optional(),
   occurredAt: z.number(),
   attemptNumber: z.number(),
 });
