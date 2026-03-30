@@ -55,6 +55,7 @@ export class Worker {
       .catch((err) => {
         this.logger.error('Worker poll error', {
           error: err instanceof Error ? err.message : String(err),
+          stack: err instanceof Error ? err.stack : undefined,
         });
         this.timer = setTimeout(() => this.poll(), this.config.pollIntervalMs);
       });
