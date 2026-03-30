@@ -22,7 +22,6 @@ function baseDeal(overrides: Partial<HsDeal> = {}): HsDeal {
     n_huespedes: '2',
     n_ninosas: '0',
     estado_de_reserva: 'Confirmada',
-    fuente_de_reserva: 'Hubspot (HS)',
     tipo_de_pago: 'Visa (VI)',
     ...overrides,
   };

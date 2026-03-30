@@ -22,12 +22,10 @@ const CONTACT_PROPERTIES = [
 ];
 
 const DEAL_PROPERTIES = [
-  'hs_object_id', 'dealname', 'createdate', 'check_in', 'check_out',
-  'room_type', 'tipo_de_tarifa', 'n_huespedes', 'n_ninosas',
-  'cantidad_de_habitaciones', 'n_habitacion', 'estado_de_reserva',
-  'fuente_de_reserva', 'tipo_de_pago', 'agencia_de_viajes',
-  'es_pseudo_room', 'comentarios_del_huesped', 'id_oracle',
-  'numero_de_reserva_', 'id_synxis',
+  'hs_object_id', 'dealname', 'createdate',
+  'check_in', 'check_out', 'room_type', 'tipo_de_tarifa',
+  'n_huespedes', 'n_ninosas', 'estado_de_reserva', 'tipo_de_pago',
+  'id_oracle', 'numero_de_reserva_', 'id_synxis',
 ];
 
 const COMPANY_PROPERTIES = [

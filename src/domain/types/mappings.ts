@@ -83,6 +83,9 @@ export const MealTransactionCodeMap: Record<string, string> = {
   breakfast: '2004',
   lunch: '2010',
   dinner: '2020',
+  snacks: '2030',      // Snacks / Bebidas adicionales
+  extras: '9000',      // Gastos adicionales del día (código genérico miscellaneous)
+  shop: '9010',        // Tienda Le Club (código genérico retail)
 };
 
 // ── Activity Types ──

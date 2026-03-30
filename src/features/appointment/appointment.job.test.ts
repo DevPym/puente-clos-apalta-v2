@@ -62,14 +62,22 @@ describe('mapHsAppointmentToOracle', () => {
     expect(result.messages[0].messageText).toBe('Excelente servicio');
   });
 
-  it('maps incidents to guest message', () => {
+  it('maps incidents with type/status/responsable to guest message', () => {
     const result = mapHsAppointmentToOracle(
-      baseAppointment({ descripcion_de_la_incidencia: 'Ruido en habitación vecina' }),
+      baseAppointment({
+        descripcion_de_la_incidencia: 'Ruido en habitación vecina',
+        tipo_de_incidencia: 'Limpieza',
+        estado_incidencia: 'Pendiente',
+        responsable_asignado: 'Carlos',
+      }),
       ctx,
     );
 
     expect(result.messages).toHaveLength(1);
     expect(result.messages[0].messageText).toContain('Incidencia: Ruido en habitación vecina');
+    expect(result.messages[0].messageText).toContain('Tipo: Limpieza');
+    expect(result.messages[0].messageText).toContain('Estado: Pendiente');
+    expect(result.messages[0].messageText).toContain('Responsable: Carlos');
   });
 
   it('maps dietary changes to guest message (workaround: no LOV)', () => {
@@ -80,6 +88,68 @@ describe('mapHsAppointmentToOracle', () => {
 
     expect(result.messages).toHaveLength(1);
     expect(result.messages[0].messageText).toContain('Cambio dietético: Sin gluten');
+  });
+
+  // ── New guest experience fields → Guest Messages ──
+
+  it('maps estado_de_animo_general to guest message', () => {
+    const result = mapHsAppointmentToOracle(
+      baseAppointment({ estado_de_animo_general: 'Feliz' }),
+      ctx,
+    );
+
+    expect(result.messages).toHaveLength(1);
+    expect(result.messages[0].messageText).toContain('Estado de ánimo: Feliz');
+  });
+
+  it('maps feedback_espontaneo to guest message', () => {
+    const result = mapHsAppointmentToOracle(
+      baseAppointment({ feedback_espontaneo: 'La vista es increíble' }),
+      ctx,
+    );
+
+    expect(result.messages).toHaveLength(1);
+    expect(result.messages[0].messageText).toContain('Feedback: La vista es increíble');
+  });
+
+  it('maps observaciones_de_mejora to guest message', () => {
+    const result = mapHsAppointmentToOracle(
+      baseAppointment({ observaciones_de_mejora: 'Mejorar wifi' }),
+      ctx,
+    );
+
+    expect(result.messages).toHaveLength(1);
+    expect(result.messages[0].messageText).toContain('Observación de mejora: Mejorar wifi');
+  });
+
+  it('maps servicios_utilizados to guest message', () => {
+    const result = mapHsAppointmentToOracle(
+      baseAppointment({ servicios_utilizados: 'SPA' }),
+      ctx,
+    );
+
+    expect(result.messages).toHaveLength(1);
+    expect(result.messages[0].messageText).toContain('Servicios utilizados: SPA');
+  });
+
+  it('maps nivel_de_satisfaccion_actividades to guest message', () => {
+    const result = mapHsAppointmentToOracle(
+      baseAppointment({ nivel_de_satisfaccion_actividades: '9' }),
+      ctx,
+    );
+
+    expect(result.messages).toHaveLength(1);
+    expect(result.messages[0].messageText).toContain('Satisfacción actividades: 9/10');
+  });
+
+  it('maps preferencia_de_horario to guest message', () => {
+    const result = mapHsAppointmentToOracle(
+      baseAppointment({ preferencia_de_horario: 'Mañana' }),
+      ctx,
+    );
+
+    expect(result.messages).toHaveLength(1);
+    expect(result.messages[0].messageText).toContain('Preferencia horario: Mañana');
   });
 
   // ── Maintenance → Service Requests ──
@@ -103,6 +173,33 @@ describe('mapHsAppointmentToOracle', () => {
 
     expect(result.serviceRequests).toHaveLength(1);
     expect(result.serviceRequests[0].description).toContain('Mantención habitación: AC no enfría');
+  });
+
+  it('maps observaciones_de_la_habitacion to service request', () => {
+    const result = mapHsAppointmentToOracle(
+      baseAppointment({ observaciones_de_la_habitacion: 'Alfombra manchada' }),
+      ctx,
+    );
+
+    expect(result.serviceRequests).toHaveLength(1);
+    expect(result.serviceRequests[0].description).toContain('Observación habitación: Alfombra manchada');
+  });
+
+  it('maps housekeeping fields to service request', () => {
+    const result = mapHsAppointmentToOracle(
+      baseAppointment({
+        nombre_housekeeping: 'María',
+        tareas_realizadas: 'Cambio de Sábanas',
+        velocidad_del_servicio: 'Rápida',
+      }),
+      ctx,
+    );
+
+    expect(result.serviceRequests).toHaveLength(1);
+    expect(result.serviceRequests[0].description).toContain('Housekeeping');
+    expect(result.serviceRequests[0].description).toContain('Responsable: María');
+    expect(result.serviceRequests[0].description).toContain('Tareas: Cambio de Sábanas');
+    expect(result.serviceRequests[0].description).toContain('Velocidad: Rápida');
   });
 
   // ── Meals → Billing Charges ──
@@ -138,6 +235,39 @@ describe('mapHsAppointmentToOracle', () => {
     expect(result.billingCharges[0].transactionCode).toBe('2020');
   });
 
+  it('maps snacks to billing charge with txn code 2030', () => {
+    const result = mapHsAppointmentToOracle(
+      baseAppointment({ snacks__bebidas_adicionales: 'Pisco sour x2' }),
+      ctx,
+    );
+
+    expect(result.billingCharges).toHaveLength(1);
+    expect(result.billingCharges[0].transactionCode).toBe('2030');
+    expect(result.billingCharges[0].description).toBe('Pisco sour x2');
+  });
+
+  it('maps gastos_adicionales_del_dia to billing charge', () => {
+    const result = mapHsAppointmentToOracle(
+      baseAppointment({ gastos_adicionales_del_dia: '15000' }),
+      ctx,
+    );
+
+    expect(result.billingCharges).toHaveLength(1);
+    expect(result.billingCharges[0].transactionCode).toBe('9000');
+    expect(result.billingCharges[0].description).toContain('Gastos adicionales: 15000');
+  });
+
+  it('maps tienda_le_club to billing charge', () => {
+    const result = mapHsAppointmentToOracle(
+      baseAppointment({ tienda_le_club: '25000' }),
+      ctx,
+    );
+
+    expect(result.billingCharges).toHaveLength(1);
+    expect(result.billingCharges[0].transactionCode).toBe('9010');
+    expect(result.billingCharges[0].description).toContain('Tienda Le Club: 25000');
+  });
+
   // ── Combination ──
 
   it('maps a full appointment to all 4 API types', () => {
@@ -148,19 +278,34 @@ describe('mapHsAppointmentToOracle', () => {
         comentarios_del_huesped: 'Muy bonito',
         descripcion_de_la_incidencia: 'Llave no funciona',
         cambios_dieteticos: 'Vegetariano',
+        estado_de_animo_general: 'Feliz',
+        feedback_espontaneo: 'Excelente',
+        observaciones_de_mejora: 'Más toallas',
+        servicios_utilizados: 'SPA',
+        nivel_de_satisfaccion_actividades: '8',
+        preferencia_de_horario: 'Mañana',
         comentarios_mantencion: 'Luz fundida',
         comentarios_mantencion_habitacion: 'Puerta trabada',
+        observaciones_de_la_habitacion: 'Alfombra',
+        nombre_housekeeping: 'Ana',
+        tareas_realizadas: 'Aspirar',
+        velocidad_del_servicio: 'Rápida',
         descripcion_desayuno_consumido: 'Continental',
         descripcion_almuerzo_consumido: 'Ensalada',
         descripcion_cena_consumida: 'Parrillada',
+        snacks__bebidas_adicionales: 'Jugo',
+        gastos_adicionales_del_dia: '5000',
+        tienda_le_club: '10000',
       }),
       ctx,
     );
 
-    // Activities as guest messages (workaround) + comments/incidents/dietary
-    expect(result.messages).toHaveLength(5);
-    expect(result.serviceRequests).toHaveLength(2);
-    expect(result.billingCharges).toHaveLength(3);
+    // Activities as guest messages (workaround) + comments/incidents/mood/feedback/etc.
+    expect(result.messages).toHaveLength(11);
+    // mantencion + mantencion_habitacion + observaciones_habitacion + housekeeping
+    expect(result.serviceRequests).toHaveLength(4);
+    // 3 meals + snacks + extras + shop
+    expect(result.billingCharges).toHaveLength(6);
     expect(result.activities).toHaveLength(0); // No Oracle activity types configured
   });
 });

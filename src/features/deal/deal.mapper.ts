@@ -3,7 +3,6 @@ import type { OracleReservation, ReservationGuest, OracleResStatus } from '../..
 import { RoomTypeMap, RatePlanMap, PaymentMethodMap } from '../../domain/types/mappings.js';
 import {
   mapReservationStatus,
-  parseSourceCode,
   parseNumberFromString,
 } from '../../domain/rules/company.rules.js';
 
@@ -13,6 +12,12 @@ export interface DealMapperInput {
   travelAgentId?: string;
 }
 
+/**
+ * Maps HsDeal → OracleReservation.
+ * Solo 8 propiedades del deal se sincronizan (según export HubSpot 2026-03-30).
+ * sourceCode siempre es 'HS' (fuente_de_reserva fue removida del deal).
+ * numberOfRooms siempre es 1, isPseudoRoom siempre false.
+ */
 export function mapHsDealToReservation(input: DealMapperInput): OracleReservation {
   const { deal, guestProfiles, travelAgentId } = input;
 
@@ -27,11 +32,6 @@ export function mapHsDealToReservation(input: DealMapperInput): OracleReservatio
   }
 
   const reservationStatus: OracleResStatus = mapReservationStatus(deal.estado_de_reserva);
-
-  let sourceCode = 'HS';
-  if (deal.fuente_de_reserva) {
-    sourceCode = parseSourceCode(deal.fuente_de_reserva);
-  }
 
   let paymentMethod: string | undefined;
   if (deal.tipo_de_pago) {
@@ -49,19 +49,17 @@ export function mapHsDealToReservation(input: DealMapperInput): OracleReservatio
     ratePlanCode,
     adults: parseNumberFromString(deal.n_huespedes) ?? 1,
     children: parseNumberFromString(deal.n_ninosas) ?? 0,
-    numberOfRooms: parseNumberFromString(deal.cantidad_de_habitaciones) ?? 1,
+    numberOfRooms: 1,
     guestProfiles,
-    sourceCode,
+    sourceCode: 'HS',
     sourceType: 'PMS',
     reservationStatus,
-    isPseudoRoom: deal.es_pseudo_room === 'true',
+    isPseudoRoom: false,
     currencyCode: 'CLP',
   };
 
-  if (deal.n_habitacion) reservation.roomId = deal.n_habitacion;
   if (travelAgentId) reservation.travelAgentId = travelAgentId;
   if (paymentMethod) reservation.paymentMethod = paymentMethod;
-  if (deal.comentarios_del_huesped) reservation.comments = deal.comentarios_del_huesped;
 
   return reservation;
 }

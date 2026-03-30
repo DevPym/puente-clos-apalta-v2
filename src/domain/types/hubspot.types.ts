@@ -25,6 +25,7 @@ export interface HsContact {
 }
 
 // ── Deal ──
+// Propiedades según export HubSpot 2026-03-30
 
 export interface HsDeal {
   // Standard properties
@@ -32,44 +33,20 @@ export interface HsDeal {
   dealname: string;
   createdate?: string | null;
 
-  // Custom — sync with Oracle (reservation)
+  // Custom — sync with Oracle (reservation) — 8 campos del XLS
   check_in: string;
   check_out: string;
-  room_type: string;
-  tipo_de_tarifa: string;
+  room_type: string;                    // enum: CASITA, PLCASITA, OWNERC, VILLAS
+  tipo_de_tarifa: string;               // enum: Half Board, Overnight, Full board
   n_huespedes: string;
   n_ninosas: string;
-  cantidad_de_habitaciones?: string | null;
-  n_habitacion?: string | null;
-  estado_de_reserva: string;
-  fuente_de_reserva?: string | null;
-  tipo_de_pago?: string | null;
-  agencia_de_viajes?: string | null;
-  es_pseudo_room?: string | null;
-  comentarios_del_huesped?: string | null;
+  estado_de_reserva: string;            // enum: Confirmada, Hospedado, Salida, Cancelada
+  tipo_de_pago?: string | null;         // enum: Efectivo (CASH), Depósito (DP), etc.
 
-  // Custom — bridge IDs
+  // Custom — bridge IDs (NO eliminar)
   id_oracle?: string | null;
-  numero_de_reserva_?: string | null;    // trailing underscore is intentional
+  numero_de_reserva_?: string | null;   // trailing underscore is intentional
   id_synxis?: string | null;
-
-  // Operational (NOT synced to Oracle)
-  nights?: string | null;
-  numero_de_noches_de_estancia?: string | null;
-  destino_anterior?: string | null;
-  estado_de_animo_general?: string | null;
-  feedback_espontaneo?: string | null;
-  gastos_adicionales_del_dia?: string | null;
-  nombre_chofer_clos_apalta?: string | null;
-  numero_de_vuelo?: string | null;
-  observaciones_de_mejora?: string | null;
-  preferencia_de_horario?: string | null;
-  transporte?: string | null;
-  tienda_le_club?: string | null;
-  actividades_pendientes_o_reservadas?: string | null;
-  actividades_realizadas?: string | null;
-  servicios_utilizados?: string | null;
-  nivel_de_satisfaccion_actividades?: string | null;
 }
 
 // ── Company ──
@@ -95,27 +72,55 @@ export interface HsCompany {
 }
 
 // ── Appointment (daily guest log) ──
+// TODAS las propiedades según export HubSpot 2026-03-30 (28 campos)
 
 export interface HsAppointment {
   hs_object_id: string;
 
+  // Referencia al deal
+  dealname?: string | null;
+  numero_de_reserva_?: string | null;
+
   // Activities → Oracle: Leisure Management API
-  actividades_pendientes_o_reservadas?: string | null;
-  actividades_realizadas?: string | null;
+  actividades_pendientes_o_reservadas?: string | null;   // enum: Birdwatching, Trekking Casa Parrón, etc.
+  actividades_realizadas?: string | null;                 // enum: mismos valores
 
   // Comments & incidents → Oracle: Guest Messages API
   comentarios_del_huesped?: string | null;
   descripcion_de_la_incidencia?: string | null;
   cambios_dieteticos?: string | null;
+  estado_de_animo_general?: string | null;                // enum: Feliz, Relajado, Indiferente, Molesto, Cansado
+  feedback_espontaneo?: string | null;
+  observaciones_de_mejora?: string | null;
+
+  // Incidents detail
+  tipo_de_incidencia?: string | null;                     // enum: Plomería, Electricidad, Limpieza, Inmuebles
+  estado_incidencia?: string | null;                      // enum: Pendiente, En proceso, Resuelto
+  responsable_asignado?: string | null;
 
   // Maintenance → Oracle: Service Requests API
   comentarios_mantencion?: string | null;
   comentarios_mantencion_habitacion?: string | null;
+  observaciones_de_la_habitacion?: string | null;
+
+  // Housekeeping
+  nombre_housekeeping?: string | null;
+  tareas_realizadas?: string | null;                      // enum: Cambio de Sábanas, Limpieza baño, Aspirar, Reponer Amenities
+  velocidad_del_servicio?: string | null;                 // enum: Rápida, Intermedia, Lenta
 
   // Meals consumed → Oracle: Cashiering API
   descripcion_desayuno_consumido?: string | null;
   descripcion_almuerzo_consumido?: string | null;
   descripcion_cena_consumida?: string | null;
+  snacks__bebidas_adicionales?: string | null;
+
+  // Guest services & extras
+  servicios_utilizados?: string | null;                   // enum: SPA, Restaurante, Tienda, Tour, Room Service
+  gastos_adicionales_del_dia?: string | null;             // number
+  tienda_le_club?: string | null;                         // number
+  nivel_de_satisfaccion_actividades?: string | null;      // enum: 1-10
+  preferencia_de_horario?: string | null;                 // enum: Mañana, Tarde, Noche
+  room_type?: string | null;                              // enum: Type 1, Type 2, Type 3
 }
 
 // ── Associations ──
