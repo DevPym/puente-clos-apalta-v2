@@ -56,8 +56,9 @@ export function createServer(deps: ServerDeps) {
     res.json(result.data);
   });
   // Raw Oracle API proxy — GET any Oracle path for debugging
-  app.get('/verify/raw/*', async (req, res) => {
-    const oraclePath = '/' + (req.params as unknown as Record<string, string>)[0];
+  // Express 5 requires named params: use :path+ for catch-all
+  app.get('/verify/raw/:path+', async (req, res) => {
+    const oraclePath = '/' + (req.params as Record<string, string>)['path+'];
     const result = await oracle.rawGet(oraclePath);
     if (!result.ok) { res.status(500).json({ error: result.error.message, code: result.error.code }); return; }
     res.json(result.data);
