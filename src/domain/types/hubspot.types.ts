@@ -132,20 +132,16 @@ export interface DealContactAssociation {
 
 // ── Webhook ──
 
-export type WebhookSubscriptionType =
-  | 'contact.creation'
-  | 'contact.propertyChange'
-  | 'contact.deletion'
-  | 'deal.creation'
-  | 'deal.propertyChange'
-  | 'deal.deletion'
-  | 'company.creation'
-  | 'company.propertyChange'
-  | 'company.deletion';
+// HubSpot envía muchos event types: creation, propertyChange, deletion,
+// merge, restore, associationChange, privacyDeletion, y para objetos custom
+// (como appointments 0-421): object.creation, object.propertyChange, etc.
+// El webhook route usa un schema flexible (z.string()) y filtra los que nos interesan.
+export type WebhookSubscriptionType = string;
 
 export interface WebhookEvent {
   objectId: number;
   subscriptionType: WebhookSubscriptionType;
+  objectTypeId?: string;       // Presente en object.* events (ej: "0-421" para appointments)
   propertyName?: string;
   propertyValue?: string;
   occurredAt: number;

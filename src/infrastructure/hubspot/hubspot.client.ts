@@ -5,6 +5,7 @@ import type {
   HsContact,
   HsCompany,
   HsDeal,
+  HsAppointment,
   DealContactAssociation,
 } from '../../domain/types/hubspot.types.js';
 import { HubSpotApiError } from '../../shared/errors/app.errors.js';
@@ -32,6 +33,21 @@ const COMPANY_PROPERTIES = [
   'hs_object_id', 'name', 'domain', 'phone', 'email_agencia',
   'nombre_agente', 'tipo_de_empresa', 'iata_code', 'id_oracle',
   'hs_parent_company_id',
+];
+
+// Appointments (objectTypeId 0-421) — todas las propiedades del registro diario
+const APPOINTMENT_OBJECT_TYPE = '0-421';
+const APPOINTMENT_PROPERTIES = [
+  'hs_object_id', 'dealname', 'numero_de_reserva_',
+  'actividades_pendientes_o_reservadas', 'actividades_realizadas',
+  'comentarios_del_huesped', 'descripcion_de_la_incidencia', 'cambios_dieteticos',
+  'estado_de_animo_general', 'feedback_espontaneo', 'observaciones_de_mejora',
+  'tipo_de_incidencia', 'estado_incidencia', 'responsable_asignado',
+  'comentarios_mantencion', 'comentarios_mantencion_habitacion', 'observaciones_de_la_habitacion',
+  'nombre_housekeeping', 'tareas_realizadas', 'velocidad_del_servicio',
+  'descripcion_desayuno_consumido', 'descripcion_almuerzo_consumido', 'descripcion_cena_consumida',
+  'snacks__bebidas_adicionales', 'servicios_utilizados', 'gastos_adicionales_del_dia',
+  'tienda_le_club', 'nivel_de_satisfaccion_actividades', 'preferencia_de_horario', 'room_type',
 ];
 
 export class HubSpotClient implements IHubSpotClient {
@@ -122,6 +138,31 @@ export class HubSpotClient implements IHubSpotClient {
       await this.client.crm.companies.basicApi.update(companyId, {
         properties: props as Record<string, string>,
       });
+    });
+  }
+
+  // ── Appointments (objectTypeId 0-421) ──
+
+  async getAppointmentById(appointmentId: string): Promise<Result<HsAppointment, HubSpotApiError>> {
+    return this.execute('getAppointmentById', async () => {
+      const response = await this.client.crm.objects.basicApi.getById(
+        APPOINTMENT_OBJECT_TYPE,
+        appointmentId,
+        APPOINTMENT_PROPERTIES,
+      );
+      return { hs_object_id: response.id, ...response.properties } as HsAppointment;
+    });
+  }
+
+  async getAssociatedDealForAppointment(appointmentId: string): Promise<Result<string | null, HubSpotApiError>> {
+    return this.execute('getAssociatedDealForAppointment', async () => {
+      const response = await this.client.crm.associations.v4.basicApi.getPage(
+        APPOINTMENT_OBJECT_TYPE,
+        appointmentId,
+        'deal',
+      );
+      if (response.results.length === 0) return null;
+      return String(response.results[0].toObjectId);
     });
   }
 

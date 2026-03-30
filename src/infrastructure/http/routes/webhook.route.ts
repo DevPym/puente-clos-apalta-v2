@@ -4,13 +4,15 @@ import type { QueueRepository } from '../../../shared/queue/queue.repository.js'
 import type { ILogger } from '../../../shared/logger/logger.js';
 import type { JobType } from '../../../domain/types/common.types.js';
 
+// HubSpot objectTypeId for Appointments (standard object 0-421)
+const APPOINTMENT_OBJECT_TYPE_ID = '0-421';
+
+// Schema flexible: acepta todos los event types que HubSpot envía.
+// Los que no mapeamos a un job se ignoran silenciosamente (no 400).
 const webhookEventSchema = z.object({
   objectId: z.number(),
-  subscriptionType: z.enum([
-    'contact.creation', 'contact.propertyChange', 'contact.deletion',
-    'deal.creation', 'deal.propertyChange', 'deal.deletion',
-    'company.creation', 'company.propertyChange', 'company.deletion',
-  ]),
+  subscriptionType: z.string(),       // flexible: contact.creation, object.creation, etc.
+  objectTypeId: z.string().optional(), // presente en object.* events (ej: "0-421" para appointments)
   propertyName: z.string().optional(),
   propertyValue: z.string().optional(),
   occurredAt: z.number(),
@@ -19,7 +21,7 @@ const webhookEventSchema = z.object({
 
 const webhookBodySchema = z.array(webhookEventSchema);
 
-// Map subscription types to job types
+// Map standard CRM subscription types to job types
 const JOB_TYPE_MAP: Record<string, JobType> = {
   'contact.creation': 'contact.create',
   'contact.propertyChange': 'contact.update',
@@ -28,6 +30,14 @@ const JOB_TYPE_MAP: Record<string, JobType> = {
   'deal.deletion': 'deal.delete',
   'company.creation': 'company.create',
   'company.propertyChange': 'company.update',
+};
+
+// Map object.* events by objectTypeId to job types
+const OBJECT_JOB_TYPE_MAP: Record<string, Record<string, JobType>> = {
+  [APPOINTMENT_OBJECT_TYPE_ID]: {
+    'object.creation': 'appointment.create',
+    'object.propertyChange': 'appointment.update',
+  },
 };
 
 // In-memory dedup: key → timestamp. TTL 10s, cleanup every 60s.
@@ -70,8 +80,13 @@ export function createWebhookRouter(queue: QueueRepository, logger: ILogger): Ro
 
     let enqueued = 0;
     for (const event of parsed.data) {
-      const jobType = JOB_TYPE_MAP[event.subscriptionType];
-      if (!jobType) continue; // Ignore unsupported subscription types (e.g. contact.deletion)
+      // Resolve job type: standard CRM events or object.* events (appointments, etc.)
+      let jobType: JobType | undefined = JOB_TYPE_MAP[event.subscriptionType];
+      if (!jobType && event.objectTypeId) {
+        const objectMap = OBJECT_JOB_TYPE_MAP[event.objectTypeId];
+        if (objectMap) jobType = objectMap[event.subscriptionType];
+      }
+      if (!jobType) continue; // Ignore unsupported types (merge, restore, associationChange, etc.)
 
       if (isDuplicate(event.objectId, event.subscriptionType)) {
         logger.info('Duplicate webhook event, skipping', {

@@ -17,6 +17,7 @@ import { processContact } from './features/contact/contact.job.js';
 import { processCompany } from './features/company/company.job.js';
 import { processDeal } from './features/deal/deal.job.js';
 import { cancelDeal } from './features/deal/deal.cancel.js';
+import { processAppointment } from './features/appointment/appointment.job.js';
 
 export interface Container {
   oracle: IOracleClient;
@@ -85,6 +86,10 @@ export function createContainer(): Container {
   worker.registerHandler('deal.create', (job) => processDeal(jobDeps, { objectId: job.objectId }));
   worker.registerHandler('deal.update', (job) => processDeal(jobDeps, { objectId: job.objectId }));
   worker.registerHandler('deal.delete', (job) => cancelDeal(cancelDeps, { objectId: job.objectId }));
+
+  const appointmentDeps = { ...jobDeps, hotelId: config.ORACLE_HOTEL_ID };
+  worker.registerHandler('appointment.create', (job) => processAppointment(appointmentDeps, { objectId: job.objectId }));
+  worker.registerHandler('appointment.update', (job) => processAppointment(appointmentDeps, { objectId: job.objectId }));
 
   const dbClose = async () => {
     await pgSql.end();
