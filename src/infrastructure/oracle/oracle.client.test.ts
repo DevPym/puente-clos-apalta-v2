@@ -363,7 +363,7 @@ describe('OracleClient', () => {
   // ── createGuestMessage ──
 
   describe('createGuestMessage', () => {
-    it('sends POST to guest messages endpoint', async () => {
+    it('sends POST to guest messages endpoint with flat body', async () => {
       httpRequest.mockResolvedValueOnce({
         status: 201,
         data: { guestMessageId: 'MSG-001' },
@@ -383,19 +383,22 @@ describe('OracleClient', () => {
       expect(httpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           method: 'POST',
-          url: '/fof/v1/hotels/CAR/guestMessages',
+          url: '/hotels/CAR/reservations/RES-001/guestMessages',
         }),
       );
+      const callPayload = httpRequest.mock.calls[0][0].data;
+      expect(callPayload.messageText).toBe('Guest is vegetarian');
+      expect(callPayload.typeOfMessage).toBe('Text');
     });
   });
 
-  // ── createServiceRequest ──
+  // ── createServiceRequest (TrackIt Items) ──
 
   describe('createServiceRequest', () => {
-    it('sends POST to service requests endpoint', async () => {
+    it('sends POST to trackItems endpoint', async () => {
       httpRequest.mockResolvedValueOnce({
         status: 201,
-        data: { serviceRequestId: 'SR-001' },
+        data: { trackItId: 'TI-001' },
       });
 
       const result = await client.createServiceRequest({
@@ -407,21 +410,24 @@ describe('OracleClient', () => {
 
       expect(result.ok).toBe(true);
       if (result.ok) {
-        expect(result.data).toBe('SR-001');
+        expect(result.data).toBe('TI-001');
       }
       expect(httpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           method: 'POST',
-          url: '/fof/v1/hotels/CAR/serviceRequests',
+          url: '/hotels/CAR/trackItems',
         }),
       );
+      const callPayload = httpRequest.mock.calls[0][0].data;
+      expect(callPayload.description).toBe('AC not working');
+      expect(callPayload.reservationInfo.roomNumber).toBe('101');
     });
   });
 
   // ── postBillingCharge ──
 
   describe('postBillingCharge', () => {
-    it('sends POST to charges endpoint', async () => {
+    it('sends POST to reservation charges endpoint', async () => {
       httpRequest.mockResolvedValueOnce({ status: 201, data: {} });
 
       const result = await client.postBillingCharge({
@@ -435,7 +441,7 @@ describe('OracleClient', () => {
       expect(httpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           method: 'POST',
-          url: '/csh/v1/hotels/CAR/charges',
+          url: '/hotels/CAR/reservations/RES-001/charges',
         }),
       );
     });

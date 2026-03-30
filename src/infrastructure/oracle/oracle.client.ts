@@ -125,10 +125,11 @@ export class OracleClient implements IOracleClient {
         activities: [{
           type: booking.activityType,
           status: booking.status,
+          numberOfPersons: 1,
         }],
       },
     };
-    return this.request('POST', `/act/v1/hotels/${hotelId}/reservations/${booking.reservationId}/activityBookings`, payload, (data) => {
+    return this.request('POST', `/hotels/${hotelId}/reservations/${booking.reservationId}/activityBookings`, payload, (data) => {
       return this.extractId(data, 'activityBookingId');
     });
   }
@@ -145,7 +146,7 @@ export class OracleClient implements IOracleClient {
         }],
       },
     };
-    return this.request('PUT', `/act/v1/hotels/${hotelId}/reservations/${reservationId}/activityBookings`, payload, () => undefined);
+    return this.request('PUT', `/hotels/${hotelId}/reservations/${reservationId}/activityBookings`, payload, () => undefined);
   }
 
   // ── Guest Messages ──
@@ -153,49 +154,56 @@ export class OracleClient implements IOracleClient {
   async createGuestMessage(message: OracleGuestMessage): Promise<Result<string, OracleApiError>> {
     const hotelId = this.config.hotelId;
     const payload = {
-      guestMessages: [{
-        message: message.messageText,
-        ...(message.messageType && { messageType: message.messageType }),
-      }],
-      reservationId: { id: message.reservationId, type: 'Reservation' },
+      messageText: message.messageText,
+      typeOfMessage: 'Text',
+      ...(message.messageType && { recipient: message.messageType }),
     };
-    return this.request('POST', `/fof/v1/hotels/${hotelId}/guestMessages`, payload, (data) => {
+    return this.request('POST', `/hotels/${hotelId}/reservations/${message.reservationId}/guestMessages`, payload, (data) => {
       return this.extractId(data, 'guestMessageId');
     });
   }
 
-  // ── Service Requests ──
+  // ── Service Requests (TrackIt Items) ──
 
   async createServiceRequest(request: OracleServiceRequest): Promise<Result<string, OracleApiError>> {
     const hotelId = this.config.hotelId;
     const payload = {
-      serviceRequest: {
-        description: request.description,
-        ...(request.roomId && { roomId: request.roomId }),
-        reservationId: { id: request.reservationId, type: 'Reservation' },
-      },
+      hotelId,
+      description: request.description,
+      ...(request.roomId && {
+        reservationInfo: {
+          reservationId: { id: request.reservationId, type: 'Reservation' },
+          roomNumber: request.roomId,
+        },
+      }),
+      ...(!request.roomId && {
+        reservationInfo: {
+          reservationId: { id: request.reservationId, type: 'Reservation' },
+        },
+      }),
     };
-    return this.request('POST', `/fof/v1/hotels/${hotelId}/serviceRequests`, payload, (data) => {
-      return this.extractId(data, 'serviceRequestId');
+    return this.request('POST', `/hotels/${hotelId}/trackItems`, payload, (data) => {
+      return this.extractId(data, 'trackItId');
     });
   }
 
   async updateServiceRequest(requestId: string, request: Partial<OracleServiceRequest>): Promise<Result<void, OracleApiError>> {
     const hotelId = this.config.hotelId;
     const payload = {
-      serviceRequest: {
-        ...(request.description && { description: request.description }),
-        ...(request.roomId && { roomId: request.roomId }),
-      },
+      hotelId,
+      trackItId: requestId,
+      ...(request.description && { description: request.description }),
+      ...(request.roomId && { reservationInfo: { roomNumber: request.roomId } }),
     };
-    return this.request('PUT', `/fof/v1/hotels/${hotelId}/serviceRequests/${requestId}`, payload, () => undefined);
+    return this.request('PUT', `/hotels/${hotelId}/trackItems`, payload, () => undefined);
   }
 
-  // ── Cashiering ──
+  // ── Cashiering (Billing Charges) ──
 
   async postBillingCharge(charge: OracleBillingCharge): Promise<Result<void, OracleApiError>> {
     const hotelId = this.config.hotelId;
     const payload = {
+      hotelId,
       charges: [{
         transactionCode: charge.transactionCode,
         postingRemark: charge.description,
@@ -204,9 +212,8 @@ export class OracleClient implements IOracleClient {
         }),
         postingQuantity: 1,
       }],
-      reservationId: { id: charge.reservationId, type: 'Reservation' },
     };
-    return this.request('POST', `/csh/v1/hotels/${hotelId}/charges`, payload, () => undefined);
+    return this.request('POST', `/hotels/${hotelId}/reservations/${charge.reservationId}/charges`, payload, () => undefined);
   }
 
   // ── Private helpers ──
