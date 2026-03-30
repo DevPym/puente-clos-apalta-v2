@@ -14,6 +14,7 @@ export function createSyncRouter(queue: QueueRepository, logger: ILogger): Route
       'contact.create', 'contact.update',
       'deal.create', 'deal.update',
       'company.create', 'company.update',
+      'appointment.create', 'appointment.update',
     ];
 
     if (!validTypes.includes(jobType as JobType)) {
