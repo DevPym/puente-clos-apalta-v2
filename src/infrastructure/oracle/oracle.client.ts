@@ -105,7 +105,14 @@ export class OracleClient implements IOracleClient {
 
   async cancelReservation(oracleId: string, reasonCode: string): Promise<Result<string | null, OracleApiError>> {
     const hotelId = this.config.hotelId;
-    const payload = { reason: { code: reasonCode } };
+    // Oracle OHIP requiere reason + reservations array con hotelId y reservationIdList
+    const payload = {
+      reason: { code: reasonCode },
+      reservations: [{
+        reservationIdList: [{ id: oracleId, type: 'Reservation' }],
+        hotelId,
+      }],
+    };
     return this.request('POST', `/rsv/v1/hotels/${hotelId}/reservations/${oracleId}/cancellations`, payload, (data) => {
       if (data && typeof data === 'object' && 'cancellationNumber' in data) {
         return (data as { cancellationNumber: string }).cancellationNumber;
