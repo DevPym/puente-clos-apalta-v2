@@ -76,45 +76,47 @@ export function createServer(deps: ServerDeps) {
       return;
     }
 
-    // OHIP Property API PUT usa reservation como OBJETO (no array como en POST)
+    // Probar con array (como POST) y con wrapper mínimo
     const payloads: Record<string, unknown> = {
-      // Formato 1: reservationProfiles separado
+      // Formato 1: array wrapper (como funciona en nuestro PUT de deal) + reservationProfiles
       '1': {
-        reservations: { reservation: {
+        reservations: { reservation: [{
           reservationProfiles: {
             reservationProfile: [{
               profileIdList: [{ id: agentId, type: 'Profile' }],
               reservationProfileType: 'TravelAgent',
             }],
           },
-        } },
+          sourceOfSale: { sourceCode: 'HS', sourceType: 'PMS' },
+        }] },
       },
-      // Formato 2: reservationGuests con profile.profileType = Agent
+      // Formato 2: array + reservationGuests Agent
       '2': {
-        reservations: { reservation: {
+        reservations: { reservation: [{
           reservationGuests: [{
             profileInfo: {
               profileIdList: [{ id: agentId, type: 'Profile' }],
               profile: { profileType: 'Agent' },
             },
           }],
-        } },
+          sourceOfSale: { sourceCode: 'HS', sourceType: 'PMS' },
+        }] },
       },
-      // Formato 3: reservationGuests con reservationProfileType = TravelAgent
+      // Formato 3: array + reservationGuests TravelAgent + reservationProfileType
       '3': {
-        reservations: { reservation: {
+        reservations: { reservation: [{
           reservationGuests: [{
             profileInfo: {
               profileIdList: [{ id: agentId, type: 'Profile' }],
-              profile: { profileType: 'TravelAgent' },
             },
             reservationProfileType: 'TravelAgent',
           }],
-        } },
+          sourceOfSale: { sourceCode: 'HS', sourceType: 'PMS' },
+        }] },
       },
-      // Formato 4: stayProfiles en roomRate
+      // Formato 4: array + stayProfiles TravelAgent en roomRate
       '4': {
-        reservations: { reservation: {
+        reservations: { reservation: [{
           roomStay: {
             roomRates: [{
               stayProfiles: [{
@@ -123,11 +125,12 @@ export function createServer(deps: ServerDeps) {
               }],
             }],
           },
-        } },
+          sourceOfSale: { sourceCode: 'HS', sourceType: 'PMS' },
+        }] },
       },
-      // Formato 5: reservationProfiles con commissionPayoutTo
+      // Formato 5: reservationProfiles + commissionPayoutTo
       '5': {
-        reservations: { reservation: {
+        reservations: { reservation: [{
           reservationProfiles: {
             reservationProfile: [{
               profileIdList: [{ id: agentId, type: 'Profile' }],
@@ -135,7 +138,8 @@ export function createServer(deps: ServerDeps) {
             }],
             commissionPayoutTo: 'TravelAgent',
           },
-        } },
+          sourceOfSale: { sourceCode: 'HS', sourceType: 'PMS' },
+        }] },
       },
     };
 
