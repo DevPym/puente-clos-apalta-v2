@@ -89,7 +89,10 @@ export class OracleClient implements IOracleClient {
   }
 
   async updateReservation(oracleId: string, reservation: Partial<OracleReservation>): Promise<Result<ReservationIds, OracleApiError>> {
-    const payload = this.buildReservationPayload(reservation);
+    const postPayload = this.buildReservationPayload(reservation);
+    // Oracle PUT expects reservation as object, POST expects array
+    const resArr = (postPayload as Record<string, Record<string, unknown[]>>).reservations.reservation;
+    const payload = { reservations: { reservation: resArr[0] } };
     const hotelId = this.config.hotelId;
     return this.request('PUT', `/rsv/v1/hotels/${hotelId}/reservations/${oracleId}`, payload, (data) => {
       return this.extractReservationIds(data);
