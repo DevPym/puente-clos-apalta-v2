@@ -184,6 +184,27 @@ async updateReservation(oracleId: string, reservation: Partial<OracleReservation
 
   // ── Guest Messages ──
 
+  async createGuestMessage(message: OracleGuestMessage): Promise<Result<string, OracleApiError>> {
+    const hotelId = this.config.hotelId;
+    
+    // OHIP espera que el arreglo se llame igual que el endpoint ("guestMessages")
+    const payload = {
+      guestMessages: [
+        {
+          messageText: message.messageText,
+          typeOfMessage: 'Text',
+          ...(message.messageType && { recipient: message.messageType }),
+        }
+      ]
+    };
+    
+    return this.request('POST', `/rsv/v1/hotels/${hotelId}/reservations/${message.reservationId}/guestMessages`, payload, (data) => {
+      return this.extractId(data, 'guestMessageId');
+    });
+  }
+
+/* Se comenta porque Oracle OHIP no tiene un endpoint específico para Guest Messages, y esta implementación no funcionaría sin afectar la lógica de reservas. 
+Si Oracle lanza un endpoint dedicado para Guest Messages en el futuro, se puede reimplementar este método para aprovecharlo.  
 async createGuestMessage(message: OracleGuestMessage): Promise<Result<string, OracleApiError>> {
     const hotelId = this.config.hotelId;
     
@@ -201,6 +222,7 @@ async createGuestMessage(message: OracleGuestMessage): Promise<Result<string, Or
       return this.extractId(data, 'guestMessageId');
     });
   }
+    */
 
 /* Oracle OHIP no tiene un endpoint específico para Guest Messages. En su lugar, los mensajes se pueden enviar como "comments" al crear o 
 actualizar una reserva, pero esto no es ideal para mensajes independientes que no estén ligados a una modificación de reserva. La API de Oracle
