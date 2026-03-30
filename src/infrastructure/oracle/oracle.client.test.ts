@@ -312,17 +312,17 @@ describe('OracleClient', () => {
       const callPayload = httpRequest.mock.calls[0][0].data;
       const res = callPayload.reservations.reservation[0];
 
-      // TravelAgent goes inside reservationGuests with type "TravelAgent"
+      // TravelAgent goes inside reservationGuests — Oracle uses "Agent" profileType
       const taGuest = res.reservationGuests.find(
         (g: Record<string, unknown>) => {
           const pi = g.profileInfo as Record<string, unknown>;
-          const ids = pi.profileIdList as Array<Record<string, string>>;
-          return ids[0].type === 'TravelAgent';
+          const prof = pi.profile as Record<string, string> | undefined;
+          return prof?.profileType === 'Agent';
         },
       );
       expect(taGuest).toBeDefined();
       expect(taGuest.profileInfo.profileIdList[0].id).toBe('AGENT-001');
-      expect(taGuest.profileInfo.profile.profileType).toBe('TravelAgent');
+      expect(taGuest.profileInfo.profile.profileType).toBe('Agent');
 
       // reservationPaymentMethods
       expect(res.reservationPaymentMethods[0].paymentMethod).toBe('VA');

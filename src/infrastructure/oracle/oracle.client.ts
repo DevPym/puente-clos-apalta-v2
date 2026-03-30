@@ -544,12 +544,13 @@ export class OracleClient implements IOracleClient {
       }
     }
 
-    // TravelAgent — goes inside reservationGuests with type "TravelAgent"
+    // TravelAgent — goes inside reservationGuests per OHIP Property API
+    // Oracle uses profileType "Agent" internally (not "TravelAgent")
     if (reservation.travelAgentId) {
       guests.push({
         profileInfo: {
-          profileIdList: [{ id: reservation.travelAgentId, type: 'TravelAgent' }],
-          profile: { profileType: 'TravelAgent' },
+          profileIdList: [{ id: reservation.travelAgentId, type: 'Profile' }],
+          profile: { profileType: 'Agent' },
         },
       });
     }
