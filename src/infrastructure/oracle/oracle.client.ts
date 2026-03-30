@@ -269,31 +269,31 @@ export class OracleClient implements IOracleClient {
 
   private handleError(err: unknown, method: string, path: string, durationMs: number): OracleApiError {
     if (axios.isAxiosError(err)) {
-      const axiosErr = err as AxiosError<{ title?: string; 'o:errorCode'?: string; detail?: string; status?: number }>;
+      const axiosErr = err as AxiosError<{ title?: string; 'o:errorCode'?: string; detail?: string; status?: number; 'o:errorPath'?: string; 'o:errorDetails'?: unknown }>;
       const status = axiosErr.response?.status ?? 0;
       const data = axiosErr.response?.data;
       const errorCode = data?.['o:errorCode'] ?? `${status}`;
       const detail = data?.detail ?? data?.title ?? axiosErr.message;
 
-      this.logger.error('Oracle API call failed', {
+      this.logger.error(`Oracle API call failed: ${method} ${path} → ${status} ${errorCode}: ${detail}`);
+      console.error('Oracle error response body:', JSON.stringify(data, null, 2));
+
+      return new OracleApiError(detail, errorCode, status, {
         method,
         path,
-        status,
-        errorCode,
-        detail,
         durationMs,
+        responseBody: data,
       });
-
-      return new OracleApiError(detail, errorCode, status, { method, path });
     }
 
     // Network errors (ECONNREFUSED, ETIMEDOUT, etc.)
     const message = err instanceof Error ? err.message : 'Unknown Oracle error';
     const code = err instanceof Error && 'code' in err ? String((err as NodeJS.ErrnoException).code) : 'NETWORK';
 
-    this.logger.error('Oracle API network error', { method, path, code, message, durationMs });
+    this.logger.error(`Oracle API network error: ${method} ${path} → ${code}: ${message}`);
+    console.error(err);
 
-    return new OracleApiError(message, code, 0, { method, path });
+    return new OracleApiError(message, code, 0, { method, path, durationMs });
   }
 
   private buildGuestPayload(profile: Partial<GuestProfile>): Record<string, unknown> {

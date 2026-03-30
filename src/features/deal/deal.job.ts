@@ -81,11 +81,7 @@ export async function processDeal(
     'numero_de_reserva_': ids.confirmationId ?? null,
   });
   if (!writebackResult.ok) {
-    logger.error('Failed to write Oracle IDs back to HubSpot deal', {
-      objectId: payload.objectId,
-      oracleId: ids.internalId,
-      error: writebackResult.error.message,
-    });
+    logger.error(`Failed to write Oracle IDs back to HubSpot deal ${payload.objectId}: ${writebackResult.error.code} — ${writebackResult.error.message}`);
   }
 
   logger.info('Created Oracle reservation', {

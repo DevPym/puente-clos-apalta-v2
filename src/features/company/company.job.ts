@@ -41,11 +41,7 @@ export async function processCompany(
 
   const writebackResult = await hubspot.updateCompany(payload.objectId, { id_oracle: oracleId });
   if (!writebackResult.ok) {
-    logger.error('Failed to write Oracle ID back to HubSpot company', {
-      objectId: payload.objectId,
-      oracleId,
-      error: writebackResult.error.message,
-    });
+    logger.error(`Failed to write Oracle ID back to HubSpot company ${payload.objectId}: ${writebackResult.error.code} — ${writebackResult.error.message}`);
   }
 
   logger.info('Created Oracle company profile', { objectId: payload.objectId, oracleId, profileType: profile.profileType });

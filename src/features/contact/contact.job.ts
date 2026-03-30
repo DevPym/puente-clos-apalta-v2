@@ -38,11 +38,7 @@ export async function processContact(
   // Write back Oracle ID to HubSpot
   const writebackResult = await hubspot.updateContact(payload.objectId, { id_oracle: oracleId });
   if (!writebackResult.ok) {
-    logger.error('Failed to write Oracle ID back to HubSpot', {
-      objectId: payload.objectId,
-      oracleId,
-      error: writebackResult.error.message,
-    });
+    logger.error(`Failed to write Oracle ID back to HubSpot contact ${payload.objectId}: ${writebackResult.error.code} — ${writebackResult.error.message}`);
   }
 
   logger.info('Created Oracle guest profile', { objectId: payload.objectId, oracleId });
