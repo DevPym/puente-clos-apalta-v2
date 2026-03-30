@@ -43,4 +43,5 @@ export interface IOracleClient {
 
   // ── Debug ──
   rawGet(path: string): Promise<Result<unknown, OracleApiError>>;
+  rawPut(path: string, payload: unknown): Promise<Result<unknown, OracleApiError>>;
 }

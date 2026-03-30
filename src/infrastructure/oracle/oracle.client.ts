@@ -230,6 +230,10 @@ export class OracleClient implements IOracleClient {
     return this.request('GET', path, undefined, (data) => data);
   }
 
+  async rawPut(path: string, payload: unknown): Promise<Result<unknown, OracleApiError>> {
+    return this.request('PUT', path, payload, (data) => data);
+  }
+
   // ── Private helpers ──
 
   private async request<T>(

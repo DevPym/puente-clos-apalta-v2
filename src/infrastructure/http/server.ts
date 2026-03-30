@@ -65,6 +65,94 @@ export function createServer(deps: ServerDeps) {
     res.json(result.data);
   });
 
+  // Test endpoint — probar diferentes formatos de TravelAgent payload contra Oracle
+  // Usage: GET /test/travel-agent?resId=42872642&agentId=37522366&format=1
+  app.get('/test/travel-agent', async (req, res) => {
+    const resId = req.query.resId as string;
+    const agentId = req.query.agentId as string;
+    const format = req.query.format as string ?? '1';
+    if (!resId || !agentId) {
+      res.status(400).json({ error: 'Missing ?resId= and ?agentId=' });
+      return;
+    }
+
+    const payloads: Record<string, unknown> = {
+      // Formato 1: reservationProfiles separado (el original)
+      '1': {
+        reservations: { reservation: [{
+          reservationProfiles: {
+            reservationProfile: [{
+              profileIdList: [{ id: agentId, type: 'Profile' }],
+              reservationProfileType: 'TravelAgent',
+            }],
+          },
+        }] },
+      },
+      // Formato 2: reservationGuests con profile.profileType = Agent
+      '2': {
+        reservations: { reservation: [{
+          reservationGuests: [{
+            profileInfo: {
+              profileIdList: [{ id: agentId, type: 'Profile' }],
+              profile: { profileType: 'Agent' },
+            },
+          }],
+        }] },
+      },
+      // Formato 3: reservationGuests con reservationProfileType = TravelAgent
+      '3': {
+        reservations: { reservation: [{
+          reservationGuests: [{
+            profileInfo: {
+              profileIdList: [{ id: agentId, type: 'Profile' }],
+              profile: { profileType: 'TravelAgent' },
+            },
+            reservationProfileType: 'TravelAgent',
+          }],
+        }] },
+      },
+      // Formato 4: stayProfiles en roomRate
+      '4': {
+        reservations: { reservation: [{
+          roomStay: {
+            roomRates: [{
+              stayProfiles: [{
+                profileIdList: [{ id: agentId, type: 'Profile' }],
+                reservationProfileType: 'TravelAgent',
+              }],
+            }],
+          },
+        }] },
+      },
+      // Formato 5: reservationProfiles con commissionPayoutTo
+      '5': {
+        reservations: { reservation: [{
+          reservationProfiles: {
+            reservationProfile: [{
+              profileIdList: [{ id: agentId, type: 'Profile' }],
+              reservationProfileType: 'TravelAgent',
+            }],
+            commissionPayoutTo: 'TravelAgent',
+          },
+        }] },
+      },
+    };
+
+    const payload = payloads[format];
+    if (!payload) {
+      res.status(400).json({ error: `Invalid format. Valid: 1-5`, formats: Object.keys(payloads) });
+      return;
+    }
+
+    try {
+      const result = await oracle.rawPut(`/rsv/v1/hotels/CAR/reservations/${resId}`, payload);
+      res.json({ format, payload, oracleResponse: result });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      res.status(500).json({ format, payload, error: msg });
+    }
+  });
+
   // Global error handler
   app.use(createErrorHandler(logger));
 
