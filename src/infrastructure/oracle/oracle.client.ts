@@ -524,24 +524,32 @@ export class OracleClient implements IOracleClient {
       sourceType: reservation.sourceType ?? 'PMS',
     };
 
-    // reservationGuests — per spec: profileInfo.profile wrapper
+    // reservationGuests — guests + travel agent (all go in this array per OHIP Property API)
+    const guests: Record<string, unknown>[] = [];
+
     if (reservation.guestProfiles && reservation.guestProfiles.length > 0) {
-      resObj.reservationGuests = reservation.guestProfiles.map((g) => ({
-        profileInfo: {
-          profileIdList: [{ id: g.oracleProfileId, type: 'Profile' }],
-        },
-        primary: g.isPrimary,
-      }));
+      for (const g of reservation.guestProfiles) {
+        guests.push({
+          profileInfo: {
+            profileIdList: [{ id: g.oracleProfileId, type: 'Profile' }],
+          },
+          primary: g.isPrimary,
+        });
+      }
     }
 
-    // reservationProfiles — travel agent
+    // TravelAgent — goes inside reservationGuests with type "TravelAgent"
     if (reservation.travelAgentId) {
-      resObj.reservationProfiles = {
-        reservationProfile: [{
-          profileIdList: [{ id: reservation.travelAgentId, type: 'Profile' }],
-          reservationProfileType: 'TravelAgent',
-        }],
-      };
+      guests.push({
+        profileInfo: {
+          profileIdList: [{ id: reservation.travelAgentId, type: 'TravelAgent' }],
+          profile: { profileType: 'TravelAgent' },
+        },
+      });
+    }
+
+    if (guests.length > 0) {
+      resObj.reservationGuests = guests;
     }
 
     // reservationPaymentMethods — required by Oracle, default to CASH
