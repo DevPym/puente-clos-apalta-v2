@@ -237,6 +237,10 @@ export class OracleClient implements IOracleClient {
         durationMs: Date.now() - startMs,
       });
 
+      if (method === 'POST') {
+        console.log(`Oracle ${method} ${path} response:`, JSON.stringify(response.data, null, 2));
+      }
+
       return { ok: true, data: transform(response.data) };
     } catch (err) {
       const oracleError = this.handleError(err, method, path, Date.now() - startMs);
@@ -512,6 +516,7 @@ export class OracleClient implements IOracleClient {
   }
 
   private extractProfileId(data: unknown): string {
+    console.log('extractProfileId received:', JSON.stringify(data, null, 2));
     if (data && typeof data === 'object') {
       const d = data as Record<string, unknown>;
       if (typeof d.profileId === 'string') return d.profileId;
