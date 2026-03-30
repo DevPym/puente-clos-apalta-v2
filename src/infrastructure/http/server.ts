@@ -76,32 +76,33 @@ export function createServer(deps: ServerDeps) {
       return;
     }
 
+    // OHIP Property API PUT usa reservation como OBJETO (no array como en POST)
     const payloads: Record<string, unknown> = {
-      // Formato 1: reservationProfiles separado (el original)
+      // Formato 1: reservationProfiles separado
       '1': {
-        reservations: { reservation: [{
+        reservations: { reservation: {
           reservationProfiles: {
             reservationProfile: [{
               profileIdList: [{ id: agentId, type: 'Profile' }],
               reservationProfileType: 'TravelAgent',
             }],
           },
-        }] },
+        } },
       },
       // Formato 2: reservationGuests con profile.profileType = Agent
       '2': {
-        reservations: { reservation: [{
+        reservations: { reservation: {
           reservationGuests: [{
             profileInfo: {
               profileIdList: [{ id: agentId, type: 'Profile' }],
               profile: { profileType: 'Agent' },
             },
           }],
-        }] },
+        } },
       },
       // Formato 3: reservationGuests con reservationProfileType = TravelAgent
       '3': {
-        reservations: { reservation: [{
+        reservations: { reservation: {
           reservationGuests: [{
             profileInfo: {
               profileIdList: [{ id: agentId, type: 'Profile' }],
@@ -109,11 +110,11 @@ export function createServer(deps: ServerDeps) {
             },
             reservationProfileType: 'TravelAgent',
           }],
-        }] },
+        } },
       },
       // Formato 4: stayProfiles en roomRate
       '4': {
-        reservations: { reservation: [{
+        reservations: { reservation: {
           roomStay: {
             roomRates: [{
               stayProfiles: [{
@@ -122,11 +123,11 @@ export function createServer(deps: ServerDeps) {
               }],
             }],
           },
-        }] },
+        } },
       },
       // Formato 5: reservationProfiles con commissionPayoutTo
       '5': {
-        reservations: { reservation: [{
+        reservations: { reservation: {
           reservationProfiles: {
             reservationProfile: [{
               profileIdList: [{ id: agentId, type: 'Profile' }],
@@ -134,7 +135,7 @@ export function createServer(deps: ServerDeps) {
             }],
             commissionPayoutTo: 'TravelAgent',
           },
-        }] },
+        } },
       },
     };
 
