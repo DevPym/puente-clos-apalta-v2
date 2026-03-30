@@ -469,6 +469,7 @@ export class OracleClient implements IOracleClient {
       ...(reservation.departureDate && { end: reservation.departureDate }),
       numberOfUnits: String(reservation.numberOfRooms ?? 1),
       marketCode: this.config.defaultMarketCode,
+      sourceCode: reservation.sourceCode ?? 'HS',
       guestCounts,
       ...(reservation.amountBeforeTax && {
         total: { amountBeforeTax: reservation.amountBeforeTax },
@@ -510,13 +511,11 @@ export class OracleClient implements IOracleClient {
       // Note: isPseudoRoom is tracked in domain but not sent to Oracle API (not a valid property)
     };
 
-    // sourceOfSale
-    if (reservation.sourceCode) {
-      resObj.sourceOfSale = {
-        sourceCode: reservation.sourceCode,
-        sourceType: reservation.sourceType ?? 'PMS',
-      };
-    }
+    // sourceOfSale — required by Oracle
+    resObj.sourceOfSale = {
+      sourceCode: reservation.sourceCode ?? 'HS',
+      sourceType: reservation.sourceType ?? 'PMS',
+    };
 
     // reservationGuests — per spec: profileInfo.profile wrapper
     if (reservation.guestProfiles && reservation.guestProfiles.length > 0) {
