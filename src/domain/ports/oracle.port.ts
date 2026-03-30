@@ -40,4 +40,7 @@ export interface IOracleClient {
 
   // ── Appointment: Cashiering ──
   postBillingCharge(charge: OracleBillingCharge): Promise<Result<void, OracleApiError>>;
+
+  // ── Debug ──
+  rawGet(path: string): Promise<Result<unknown, OracleApiError>>;
 }

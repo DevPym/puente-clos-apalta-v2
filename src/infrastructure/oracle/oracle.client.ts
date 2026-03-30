@@ -224,6 +224,12 @@ export class OracleClient implements IOracleClient {
     return this.request('POST', `/hotels/${hotelId}/reservations/${charge.reservationId}/charges`, payload, () => undefined);
   }
 
+  // ── Debug ──
+
+  async rawGet(path: string): Promise<Result<unknown, OracleApiError>> {
+    return this.request('GET', path, undefined, (data) => data);
+  }
+
   // ── Private helpers ──
 
   private async request<T>(

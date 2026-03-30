@@ -44,7 +44,7 @@ export function createServer(deps: ServerDeps) {
   app.use(createSyncRouter(queue, logger));
   app.use(createDlqRouter(dlq, queue, logger));
 
-  // Verify route — consulta Oracle para verificar registros sincronizados
+  // Verify routes — consulta Oracle para verificar registros sincronizados
   app.get('/verify/guest/:oracleId', async (req, res) => {
     const result = await oracle.getGuestProfile(req.params.oracleId);
     if (!result.ok) { res.status(500).json({ error: result.error.message }); return; }
@@ -53,6 +53,13 @@ export function createServer(deps: ServerDeps) {
   app.get('/verify/reservation/:oracleId', async (req, res) => {
     const result = await oracle.getReservation(req.params.oracleId);
     if (!result.ok) { res.status(500).json({ error: result.error.message }); return; }
+    res.json(result.data);
+  });
+  // Raw Oracle API proxy — GET any Oracle path for debugging
+  app.get('/verify/raw/*', async (req, res) => {
+    const oraclePath = '/' + (req.params as unknown as Record<string, string>)[0];
+    const result = await oracle.rawGet(oraclePath);
+    if (!result.ok) { res.status(500).json({ error: result.error.message, code: result.error.code }); return; }
     res.json(result.data);
   });
 
