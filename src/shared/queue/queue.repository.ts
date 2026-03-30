@@ -38,7 +38,7 @@ export class QueueRepository {
   }
 
   async dequeue(): Promise<QueueJob | null> {
-    const now = new Date();
+    const now = new Date().toISOString();
     const result = await this.db.execute(sql`
       UPDATE jobs SET status = 'processing', updated_at = ${now}
       WHERE id = (

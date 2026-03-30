@@ -57,12 +57,13 @@ export class SyncLogRepository {
   }
 
   async getErrorStats(since: Date): Promise<Array<{ errorCode: string; count: number }>> {
+    const sinceIso = since.toISOString();
     const rows = await this.db.select({
       errorCode: syncLogs.errorCode,
       count: sql<number>`count(*)::int`,
     })
       .from(syncLogs)
-      .where(sql`${syncLogs.status} = 'error' AND ${syncLogs.createdAt} >= ${since}`)
+      .where(sql`${syncLogs.status} = 'error' AND ${syncLogs.createdAt} >= ${sinceIso}`)
       .groupBy(syncLogs.errorCode);
 
     return rows.map((r) => ({
