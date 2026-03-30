@@ -243,7 +243,8 @@ describe('OracleClient', () => {
 
       const callPayload = httpRequest.mock.calls[0][0].data;
       expect(callPayload.companyDetails.company.companyName).toBe('Viajes Chile');
-      expect(callPayload.companyDetails.profileType).toBe('TravelAgent');
+      // profileType is NOT sent to Oracle — it rejects it as unknown property
+      expect(callPayload.companyDetails.profileType).toBeUndefined();
       expect(callPayload.companyDetails.iATAInfo.iATACompany).toBe('IATA001');
     });
   });

@@ -397,9 +397,10 @@ export class OracleClient implements IOracleClient {
 
   // POST /crm/v1/companies — uses "company" schema with companyDetails
   private buildCompanyPayload(profile: Partial<CompanyProfile>): Record<string, unknown> {
+    // Oracle OHIP /crm/v1/companies NO acepta profileType dentro de companyDetails.
+    // El tipo (Company vs TravelAgent) se infiere por la presencia de iATAInfo.
     const companyDetails: Record<string, unknown> = {
       ...(profile.companyName && { company: { companyName: profile.companyName } }),
-      ...(profile.profileType && { profileType: profile.profileType }),
       ...(profile.iataCode && { iATAInfo: { iATACompany: profile.iataCode } }),
       ...(profile.contactName && { contactName: profile.contactName }),
     };
@@ -421,7 +422,6 @@ export class OracleClient implements IOracleClient {
   private buildCompanyProfilePayload(profile: Partial<CompanyProfile>): Record<string, unknown> {
     const profileDetails: Record<string, unknown> = {
       ...(profile.companyName && { company: { companyName: profile.companyName } }),
-      ...(profile.profileType && { profileType: profile.profileType }),
       ...(profile.iataCode && { iATAInfo: { iATACompany: profile.iataCode } }),
       ...(profile.contactName && { contactName: profile.contactName }),
     };
