@@ -505,7 +505,7 @@ export class OracleClient implements IOracleClient {
     const resObj: Record<string, unknown> = {
       roomStay,
       ...(reservation.reservationStatus && { reservationStatus: reservation.reservationStatus }),
-      ...(reservation.isPseudoRoom !== undefined && { pseudoRoom: reservation.isPseudoRoom }),
+      // Note: isPseudoRoom is tracked in domain but not sent to Oracle API (not a valid property)
     };
 
     // sourceOfSale
