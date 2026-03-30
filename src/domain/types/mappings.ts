@@ -30,12 +30,20 @@ export const SourceCodeMap: Record<string, string> = {
 // NOTE: Oracle uses different codes than HubSpot for some methods
 
 export const PaymentMethodMap: Record<string, string | null> = {
+  // HubSpot labels (display values)
   'Efectivo (CASH)': 'CASH',
   'Depósito (DP)': 'BTR',       // Oracle: BTR = Bank Transfer
   'Cuenta por Cobrar (CO)': 'INV', // Oracle: INV = Direct Bill
   'None (NON)': null,            // Do not send to Oracle
   'MasterCard (MC)': 'MC',
   'Visa (VI)': 'VA',            // Oracle: VA — NOT VI!
+  // HubSpot internal values (pass-through from API)
+  'CASH': 'CASH',
+  'DP': 'BTR',
+  'CO': 'INV',
+  'NON': null,
+  'MC': 'MC',
+  'VI': 'VA',
 };
 
 // ── Company Type ──
