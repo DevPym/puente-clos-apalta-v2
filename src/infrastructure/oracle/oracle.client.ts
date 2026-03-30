@@ -239,6 +239,7 @@ export class OracleClient implements IOracleClient {
         reservationId: [{ id: reservationId, type: 'Reservation' }],
         hotelId,
       },
+      instructions: 'FetchReservationInfo',
     };
     return this.request('PUT', `/fof/v1/hotels/${hotelId}/commissionAgent/${agentProfileId}/commissions`, payload, () => undefined);
   }
