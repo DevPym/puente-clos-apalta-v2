@@ -61,6 +61,7 @@ export function createContainer(): Container {
       hotelId: config.ORACLE_HOTEL_ID,
       appKey: config.ORACLE_APP_KEY,
       externalSystem: config.ORACLE_EXTERNAL_SYSTEM,
+      defaultMarketCode: config.ORACLE_DEFAULT_MARKET_CODE,
     },
     oracleAuth,
     logger,

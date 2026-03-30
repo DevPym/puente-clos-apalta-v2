@@ -22,6 +22,7 @@ export interface OracleClientConfig {
   hotelId: string;
   appKey: string;
   externalSystem: string;
+  defaultMarketCode: string;
 }
 
 export class OracleClient implements IOracleClient {
@@ -467,6 +468,7 @@ export class OracleClient implements IOracleClient {
       ...(reservation.arrivalDate && { start: reservation.arrivalDate }),
       ...(reservation.departureDate && { end: reservation.departureDate }),
       numberOfUnits: String(reservation.numberOfRooms ?? 1),
+      marketCode: this.config.defaultMarketCode,
       guestCounts,
       ...(reservation.amountBeforeTax && {
         total: { amountBeforeTax: reservation.amountBeforeTax },
