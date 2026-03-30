@@ -5,5 +5,4 @@ dist/
 !.env.example
 *.log
 .DS_Store
-drizzle/
 .claude/settings.local.json
