@@ -11,6 +11,8 @@ const envSchema = z.object({
   ORACLE_CLIENT_SECRET: z.string().min(1),
   ORACLE_HOTEL_ID: z.string().min(1),
   ORACLE_APP_KEY: z.string().uuid(),
+  ORACLE_ENTERPRISE_ID: z.string().default('CLOSAP'),
+  ORACLE_SCOPE: z.string().default('urn:opc:hgbu:ws:__myscopes__'),
   ORACLE_EXTERNAL_SYSTEM: z.string().default('CLOSAP_HS'),
   ORACLE_CANCELLATION_REASON_CODE: z.string().default('CANCEL'),
 

@@ -5,6 +5,9 @@ export interface OracleAuthConfig {
   baseUrl: string;
   clientId: string;
   clientSecret: string;
+  appKey: string;
+  enterpriseId: string;
+  scope: string;
 }
 
 interface TokenData {
@@ -42,6 +45,8 @@ export class OracleAuth {
   async refreshToken(): Promise<string> {
     this.logger.info('Refreshing Oracle OAuth token');
 
+    const basicAuth = Buffer.from(`${this.config.clientId}:${this.config.clientSecret}`).toString('base64');
+
     const response = await axios.post<{
       access_token: string;
       expires_in: number;
@@ -50,11 +55,15 @@ export class OracleAuth {
       `${this.config.baseUrl}/oauth/v1/tokens`,
       new URLSearchParams({
         grant_type: 'client_credentials',
-        client_id: this.config.clientId,
-        client_secret: this.config.clientSecret,
+        scope: this.config.scope,
       }).toString(),
       {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': `Basic ${basicAuth}`,
+          'x-app-key': this.config.appKey,
+          'enterpriseId': this.config.enterpriseId,
+        },
         timeout: 10_000,
       },
     );

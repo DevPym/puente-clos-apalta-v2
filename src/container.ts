@@ -48,6 +48,9 @@ export function createContainer(): Container {
       baseUrl: config.ORACLE_BASE_URL,
       clientId: config.ORACLE_CLIENT_ID,
       clientSecret: config.ORACLE_CLIENT_SECRET,
+      appKey: config.ORACLE_APP_KEY,
+      enterpriseId: config.ORACLE_ENTERPRISE_ID,
+      scope: config.ORACLE_SCOPE,
     },
     logger,
   );
