@@ -100,9 +100,9 @@ async updateReservation(oracleId: string, reservation: Partial<OracleReservation
 /*   PRUEBA DE PARCHE PARA MANEJAR EL PROBLEMA DE LOS ARRAYS EN PUT DE RESERVAS. ELIMINAR CUANDO SE SOLUCIONE EN ORACLE OHIP, IDEALMENTE EN LA VERSIÓN 1.3.0 DEL API.
   async updateReservation(oracleId: string, reservation: Partial<OracleReservation>): Promise<Result<ReservationIds, OracleApiError>> {
     const postPayload = this.buildReservationPayload(reservation);
-    // Oracle PUT expects reservation as object, POST expects array
+    // Oracle PUT expects top-level { reservation: {...} }, not { reservations: { reservation: [...] } }
     const resArr = (postPayload as Record<string, Record<string, unknown[]>>).reservations.reservation;
-    const payload = { reservations: { reservation: resArr[0] } };
+    const payload = { reservation: resArr[0] };
     const hotelId = this.config.hotelId;
     return this.request('PUT', `/rsv/v1/hotels/${hotelId}/reservations/${oracleId}`, payload, (data) => {
       return this.extractReservationIds(data);
@@ -150,7 +150,7 @@ async updateReservation(oracleId: string, reservation: Partial<OracleReservation
         }],
       },
     };
-    return this.request('POST', `/hotels/${hotelId}/reservations/${booking.reservationId}/activityBookings`, payload, (data) => {
+    return this.request('POST', `/lms/v1/hotels/${hotelId}/reservations/${booking.reservationId}/activityBookings`, payload, (data) => {
       return this.extractId(data, 'activityBookingId');
     });
   }
@@ -167,7 +167,7 @@ async updateReservation(oracleId: string, reservation: Partial<OracleReservation
         }],
       },
     };
-    return this.request('PUT', `/hotels/${hotelId}/reservations/${reservationId}/activityBookings`, payload, () => undefined);
+    return this.request('PUT', `/lms/v1/hotels/${hotelId}/reservations/${reservationId}/activityBookings`, payload, () => undefined);
   }
 
   // ── Guest Messages ──
@@ -204,7 +204,7 @@ este método se puede implementar para aprovecharlo. Mientras tanto, la creació
       typeOfMessage: 'Text',
       ...(message.messageType && { recipient: message.messageType }),
     };
-    return this.request('POST', `/hotels/${hotelId}/reservations/${message.reservationId}/guestMessages`, payload, (data) => {
+    return this.request('POST', `/rsv/v1/hotels/${hotelId}/reservations/${message.reservationId}/guestMessages`, payload, (data) => {
       return this.extractId(data, 'guestMessageId');
     });
   }
@@ -228,7 +228,7 @@ este método se puede implementar para aprovecharlo. Mientras tanto, la creació
         },
       }),
     };
-    return this.request('POST', `/hotels/${hotelId}/trackItems`, payload, (data) => {
+    return this.request('POST', `/crm/v1/hotels/${hotelId}/trackItems`, payload, (data) => {
       return this.extractId(data, 'trackItId');
     });
   }
@@ -241,7 +241,7 @@ este método se puede implementar para aprovecharlo. Mientras tanto, la creació
       ...(request.description && { description: request.description }),
       ...(request.roomId && { reservationInfo: { roomNumber: request.roomId } }),
     };
-    return this.request('PUT', `/hotels/${hotelId}/trackItems`, payload, () => undefined);
+    return this.request('PUT', `/crm/v1/hotels/${hotelId}/trackItems`, payload, () => undefined);
   }
 
   // ── Cashiering (Billing Charges) ──
@@ -259,7 +259,7 @@ este método se puede implementar para aprovecharlo. Mientras tanto, la creació
         postingQuantity: 1,
       }],
     };
-    return this.request('POST', `/hotels/${hotelId}/reservations/${charge.reservationId}/charges`, payload, () => undefined);
+    return this.request('POST', `/csh/v1/hotels/${hotelId}/reservations/${charge.reservationId}/charges`, payload, () => undefined);
   }
 
   // ── Front Desk: TravelAgent ──

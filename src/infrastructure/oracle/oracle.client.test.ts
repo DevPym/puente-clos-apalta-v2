@@ -385,7 +385,7 @@ describe('OracleClient', () => {
       expect(httpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           method: 'POST',
-          url: '/hotels/CAR/reservations/RES-001/guestMessages',
+          url: '/rsv/v1/hotels/CAR/reservations/RES-001/guestMessages',
         }),
       );
       const callPayload = httpRequest.mock.calls[0][0].data;
@@ -417,7 +417,7 @@ describe('OracleClient', () => {
       expect(httpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           method: 'POST',
-          url: '/hotels/CAR/trackItems',
+          url: '/crm/v1/hotels/CAR/trackItems',
         }),
       );
       const callPayload = httpRequest.mock.calls[0][0].data;
@@ -443,7 +443,7 @@ describe('OracleClient', () => {
       expect(httpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           method: 'POST',
-          url: '/hotels/CAR/reservations/RES-001/charges',
+          url: '/csh/v1/hotels/CAR/reservations/RES-001/charges',
         }),
       );
     });
