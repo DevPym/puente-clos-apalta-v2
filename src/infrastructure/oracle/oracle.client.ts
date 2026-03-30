@@ -53,7 +53,7 @@ export class OracleClient implements IOracleClient {
   }
 
   async updateGuestProfile(oracleId: string, profile: Partial<GuestProfile>): Promise<Result<void, OracleApiError>> {
-    const payload = this.buildGuestPayload(profile);
+    const payload = this.buildProfilePayload(profile);
     return this.request('PUT', `/crm/v1/profiles/${oracleId}`, payload, () => undefined);
   }
 
@@ -67,13 +67,13 @@ export class OracleClient implements IOracleClient {
 
   async createCompanyProfile(profile: CompanyProfile): Promise<Result<string, OracleApiError>> {
     const payload = this.buildCompanyPayload(profile);
-    return this.request('POST', '/crm/v1/profiles', payload, (data) => {
+    return this.request('POST', '/crm/v1/companies', payload, (data) => {
       return this.extractProfileId(data);
     });
   }
 
   async updateCompanyProfile(oracleId: string, profile: Partial<CompanyProfile>): Promise<Result<void, OracleApiError>> {
-    const payload = this.buildCompanyPayload(profile);
+    const payload = this.buildCompanyProfilePayload(profile);
     return this.request('PUT', `/crm/v1/profiles/${oracleId}`, payload, () => undefined);
   }
 
@@ -296,64 +296,155 @@ export class OracleClient implements IOracleClient {
     return new OracleApiError(message, code, 0, { method, path, durationMs });
   }
 
+  // POST /crm/v1/guests — uses "guest" schema with guestDetails.customer.personName[]
   private buildGuestPayload(profile: Partial<GuestProfile>): Record<string, unknown> {
-    const payload: Record<string, unknown> = {
-      guestDetails: {
-        customer: {
-          ...(profile.givenName && { givenName: profile.givenName }),
-          ...(profile.surname && { surname: profile.surname }),
-          ...(profile.birthDate && { birthDate: profile.birthDate }),
-          ...(profile.vipCode && { vip: { vipCode: profile.vipCode } }),
-        },
-        ...(profile.namePrefix && { namePrefix: profile.namePrefix }),
-        ...(profile.language && { language: profile.language }),
-        ...(profile.nationality && { nationality: { code: profile.nationality } }),
-      },
+    const personName: Record<string, unknown> = {
+      ...(profile.givenName && { givenName: profile.givenName }),
+      ...(profile.surname && { surname: profile.surname }),
+      ...(profile.namePrefix && { namePrefix: profile.namePrefix }),
+      nameType: 'PRIMARY',
     };
 
-    const guestDetails = payload.guestDetails as Record<string, unknown>;
+    const customer: Record<string, unknown> = {
+      personName: [personName],
+      ...(profile.birthDate && { birthDate: profile.birthDate }),
+      ...(profile.vipCode && { vipStatus: profile.vipCode }),
+      ...(profile.language && { language: profile.language }),
+      ...(profile.nationality && { nationality: profile.nationality }),
+    };
+
+    if (profile.identifications && profile.identifications.length > 0) {
+      customer.identifications = {
+        identificationInfo: profile.identifications.map((id) => ({
+          identification: { idType: id.idType, idNumber: id.idNumber },
+        })),
+      };
+    }
+
+    const guestDetails: Record<string, unknown> = { customer };
 
     if (profile.email) {
       guestDetails.emails = { emailInfo: [{ email: profile.email }] };
     }
 
-    const phones: Array<{ phoneType: string; phoneNumber: string }> = [];
-    if (profile.phoneNumber) phones.push({ phoneType: 'Phone', phoneNumber: profile.phoneNumber });
-    if (profile.mobileNumber) phones.push({ phoneType: 'Mobile', phoneNumber: profile.mobileNumber });
-    if (phones.length > 0) guestDetails.telephones = phones;
+    const phones = this.buildPhones(profile.phoneNumber, profile.mobileNumber);
+    if (phones.length > 0) {
+      guestDetails.telephones = { telephoneInfo: phones };
+    }
 
     if (profile.address) {
       guestDetails.addresses = {
-        addressInfo: [{
-          addressLine: profile.address.addressLine,
-          ...(profile.address.cityName && { cityName: profile.address.cityName }),
-          ...(profile.address.postalCode && { postalCode: profile.address.postalCode }),
-          ...(profile.address.state && { state: profile.address.state }),
-          ...(profile.address.countryCode && { countryCode: profile.address.countryCode }),
-        }],
+        addressInfo: [{ address: this.buildAddress(profile.address) }],
       };
     }
 
-    if (profile.identifications && profile.identifications.length > 0) {
-      guestDetails.identifications = profile.identifications.map((id) => ({
-        idType: id.idType,
-        idNumber: id.idNumber,
-      }));
-    }
-
-    return payload;
+    return { guestDetails };
   }
 
+  // PUT /crm/v1/profiles/{id} — uses "profile" schema with profileDetails.customer.personName[]
+  private buildProfilePayload(profile: Partial<GuestProfile>): Record<string, unknown> {
+    const personName: Record<string, unknown> = {
+      ...(profile.givenName && { givenName: profile.givenName }),
+      ...(profile.surname && { surname: profile.surname }),
+      ...(profile.namePrefix && { namePrefix: profile.namePrefix }),
+      nameType: 'PRIMARY',
+    };
+
+    const customer: Record<string, unknown> = {
+      personName: [personName],
+      ...(profile.birthDate && { birthDate: profile.birthDate }),
+      ...(profile.vipCode && { vipStatus: profile.vipCode }),
+      ...(profile.language && { language: profile.language }),
+      ...(profile.nationality && { nationality: profile.nationality }),
+    };
+
+    if (profile.identifications && profile.identifications.length > 0) {
+      customer.identifications = {
+        identificationInfo: profile.identifications.map((id) => ({
+          identification: { idType: id.idType, idNumber: id.idNumber },
+        })),
+      };
+    }
+
+    const profileDetails: Record<string, unknown> = { customer };
+
+    if (profile.email) {
+      profileDetails.emails = { emailInfo: [{ email: profile.email }] };
+    }
+
+    const phones = this.buildPhones(profile.phoneNumber, profile.mobileNumber);
+    if (phones.length > 0) {
+      profileDetails.telephones = { telephoneInfo: phones };
+    }
+
+    if (profile.address) {
+      profileDetails.addresses = {
+        addressInfo: [{ address: this.buildAddress(profile.address) }],
+      };
+    }
+
+    return { profileDetails };
+  }
+
+  // POST /crm/v1/companies — uses "company" schema with companyDetails
   private buildCompanyPayload(profile: Partial<CompanyProfile>): Record<string, unknown> {
+    const companyDetails: Record<string, unknown> = {
+      ...(profile.companyName && { company: { companyName: profile.companyName } }),
+      ...(profile.profileType && { profileType: profile.profileType }),
+      ...(profile.iataCode && { iATAInfo: { iATACompany: profile.iataCode } }),
+      ...(profile.contactName && { contactName: profile.contactName }),
+    };
+
+    if (profile.email) {
+      companyDetails.emails = { emailInfo: [{ email: profile.email }] };
+    }
+
+    if (profile.phoneNumber) {
+      companyDetails.telephones = {
+        telephoneInfo: [{ telephone: { phoneTechType: 'PHONE', phoneNumber: profile.phoneNumber } }],
+      };
+    }
+
+    return { companyDetails };
+  }
+
+  // PUT /crm/v1/profiles/{id} — uses "profile" schema with profileDetails for company updates
+  private buildCompanyProfilePayload(profile: Partial<CompanyProfile>): Record<string, unknown> {
+    const profileDetails: Record<string, unknown> = {
+      ...(profile.companyName && { company: { companyName: profile.companyName } }),
+      ...(profile.profileType && { profileType: profile.profileType }),
+      ...(profile.iataCode && { iATAInfo: { iATACompany: profile.iataCode } }),
+      ...(profile.contactName && { contactName: profile.contactName }),
+    };
+
+    if (profile.email) {
+      profileDetails.emails = { emailInfo: [{ email: profile.email }] };
+    }
+
+    if (profile.phoneNumber) {
+      profileDetails.telephones = {
+        telephoneInfo: [{ telephone: { phoneTechType: 'PHONE', phoneNumber: profile.phoneNumber } }],
+      };
+    }
+
+    return { profileDetails };
+  }
+
+  private buildPhones(phone?: string, mobile?: string): Array<Record<string, unknown>> {
+    const phones: Array<Record<string, unknown>> = [];
+    if (phone) phones.push({ telephone: { phoneTechType: 'PHONE', phoneNumber: phone } });
+    if (mobile) phones.push({ telephone: { phoneTechType: 'MOBILE', phoneNumber: mobile } });
+    return phones;
+  }
+
+  private buildAddress(address: GuestProfile['address']): Record<string, unknown> {
+    if (!address) return {};
     return {
-      companyDetails: {
-        ...(profile.companyName && { company: { companyName: profile.companyName } }),
-        ...(profile.profileType && { profileType: profile.profileType }),
-        ...(profile.iataCode && { iATAInfo: { iATACompany: profile.iataCode } }),
-        ...(profile.email && { emails: { emailInfo: [{ email: profile.email }] } }),
-        ...(profile.phoneNumber && { telephones: [{ phoneNumber: profile.phoneNumber }] }),
-        ...(profile.contactName && { contactName: profile.contactName }),
-      },
+      addressLine: address.addressLine,
+      ...(address.cityName && { cityName: address.cityName }),
+      ...(address.postalCode && { postalCode: address.postalCode }),
+      ...(address.state && { state: address.state }),
+      ...(address.countryCode && { country: { code: address.countryCode } }),
     };
   }
 
@@ -424,11 +515,16 @@ export class OracleClient implements IOracleClient {
     if (data && typeof data === 'object') {
       const d = data as Record<string, unknown>;
       if (typeof d.profileId === 'string') return d.profileId;
-      if (Array.isArray(d.profileIdList)) {
-        for (const item of d.profileIdList) {
-          if (typeof item === 'object' && item !== null) {
-            const entry = item as Record<string, unknown>;
-            if (entry.type === 'Profile' && typeof entry.id === 'string') return entry.id;
+      // POST /guests returns guestIdList, POST /companies returns companyIdList,
+      // generic responses may use profileIdList
+      const idLists = ['profileIdList', 'guestIdList', 'companyIdList'] as const;
+      for (const listKey of idLists) {
+        if (Array.isArray(d[listKey])) {
+          for (const item of d[listKey] as unknown[]) {
+            if (typeof item === 'object' && item !== null) {
+              const entry = item as Record<string, unknown>;
+              if (entry.type === 'Profile' && typeof entry.id === 'string') return entry.id;
+            }
           }
         }
       }

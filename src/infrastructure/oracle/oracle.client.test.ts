@@ -69,7 +69,7 @@ describe('OracleClient', () => {
     it('creates a guest profile and returns the oracle ID', async () => {
       httpRequest.mockResolvedValueOnce({
         status: 201,
-        data: { profileIdList: [{ type: 'Profile', id: 'ORACLE-123' }] },
+        data: { guestIdList: [{ type: 'Profile', id: 'ORACLE-123' }] },
       });
 
       const result = await client.createGuestProfile(profile);
@@ -89,25 +89,24 @@ describe('OracleClient', () => {
     it('sends correct payload structure', async () => {
       httpRequest.mockResolvedValueOnce({
         status: 201,
-        data: { profileIdList: [{ type: 'Profile', id: 'P-1' }] },
+        data: { guestIdList: [{ type: 'Profile', id: 'P-1' }] },
       });
 
       await client.createGuestProfile(profile);
 
       const callPayload = httpRequest.mock.calls[0][0].data;
-      expect(callPayload.guestDetails.customer.givenName).toBe('Juan');
-      expect(callPayload.guestDetails.customer.surname).toBe('Pérez');
+      expect(callPayload.guestDetails.customer.personName[0].givenName).toBe('Juan');
+      expect(callPayload.guestDetails.customer.personName[0].surname).toBe('Pérez');
       expect(callPayload.guestDetails.emails.emailInfo[0].email).toBe('juan@test.com');
-      expect(callPayload.guestDetails.telephones[0]).toEqual({
-        phoneType: 'Phone',
-        phoneNumber: '+56912345678',
+      expect(callPayload.guestDetails.telephones.telephoneInfo[0]).toEqual({
+        telephone: { phoneTechType: 'PHONE', phoneNumber: '+56912345678' },
       });
     });
 
     it('includes identifications when provided', async () => {
       httpRequest.mockResolvedValueOnce({
         status: 201,
-        data: { profileIdList: [{ type: 'Profile', id: 'P-2' }] },
+        data: { guestIdList: [{ type: 'Profile', id: 'P-2' }] },
       });
 
       const profileWithIds: GuestProfile = {
@@ -121,8 +120,9 @@ describe('OracleClient', () => {
       await client.createGuestProfile(profileWithIds);
 
       const callPayload = httpRequest.mock.calls[0][0].data;
-      expect(callPayload.guestDetails.identifications).toHaveLength(2);
-      expect(callPayload.guestDetails.identifications[0].idType).toBe('PASSPORT');
+      const idInfo = callPayload.guestDetails.customer.identifications.identificationInfo;
+      expect(idInfo).toHaveLength(2);
+      expect(idInfo[0].identification.idType).toBe('PASSPORT');
     });
 
     it('returns error on API failure', async () => {
@@ -152,7 +152,7 @@ describe('OracleClient', () => {
   // ── updateGuestProfile ──
 
   describe('updateGuestProfile', () => {
-    it('sends PUT to correct path', async () => {
+    it('sends PUT to correct path with profileDetails', async () => {
       httpRequest.mockResolvedValueOnce({ status: 200, data: {} });
 
       const result = await client.updateGuestProfile('ORACLE-123', { email: 'new@test.com' });
@@ -164,6 +164,9 @@ describe('OracleClient', () => {
           url: '/crm/v1/profiles/ORACLE-123',
         }),
       );
+      const callPayload = httpRequest.mock.calls[0][0].data;
+      expect(callPayload.profileDetails).toBeDefined();
+      expect(callPayload.guestDetails).toBeUndefined();
     });
   });
 
@@ -209,7 +212,7 @@ describe('OracleClient', () => {
     it('creates a company and returns the oracle ID', async () => {
       httpRequest.mockResolvedValueOnce({
         status: 201,
-        data: { profileIdList: [{ type: 'Profile', id: 'CORP-789' }] },
+        data: { companyIdList: [{ type: 'Profile', id: 'CORP-789' }] },
       });
 
       const result = await client.createCompanyProfile(company);
@@ -221,7 +224,7 @@ describe('OracleClient', () => {
       expect(httpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           method: 'POST',
-          url: '/crm/v1/profiles',
+          url: '/crm/v1/companies',
         }),
       );
     });
@@ -229,7 +232,7 @@ describe('OracleClient', () => {
     it('sends correct company payload', async () => {
       httpRequest.mockResolvedValueOnce({
         status: 201,
-        data: { profileIdList: [{ type: 'Profile', id: 'CORP-1' }] },
+        data: { companyIdList: [{ type: 'Profile', id: 'CORP-1' }] },
       });
 
       await client.createCompanyProfile(company);
