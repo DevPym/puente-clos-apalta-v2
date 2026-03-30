@@ -83,6 +83,19 @@ export class OracleClient implements IOracleClient {
   async createReservation(reservation: OracleReservation): Promise<Result<ReservationIds, OracleApiError>> {
     const payload = this.buildReservationPayload(reservation);
     const hotelId = this.config.hotelId;
+    // Debug: log if TravelAgent is in payload
+    const resObj = (payload as Record<string, unknown>).reservations as Record<string, unknown>;
+    const resArr = resObj?.reservation as Record<string, unknown>[];
+    const guests = resArr?.[0]?.reservationGuests as unknown[];
+    this.logger.info('createReservation payload debug', {
+      travelAgentId: reservation.travelAgentId ?? 'NONE',
+      guestCount: guests?.length ?? 0,
+      hasAgent: guests?.some((g: unknown) => {
+        const pi = (g as Record<string, unknown>).profileInfo as Record<string, unknown>;
+        const prof = pi?.profile as Record<string, string>;
+        return prof?.profileType === 'Agent';
+      }) ?? false,
+    });
     return this.request('POST', `/rsv/v1/hotels/${hotelId}/reservations`, payload, (data) => {
       return this.extractReservationIds(data);
     });
