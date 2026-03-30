@@ -65,7 +65,17 @@ export function createWebhookRouter(queue: QueueRepository, logger: ILogger): Ro
   router.post('/hubspot', async (req, res) => {
     const parsed = webhookBodySchema.safeParse(req.body);
     if (!parsed.success) {
-      logger.warn('Invalid webhook payload', { error: parsed.error.flatten() });
+      // Log the raw payload shape to diagnose which field fails Zod validation
+      const rawPreview = Array.isArray(req.body)
+        ? req.body.slice(0, 2).map((e: Record<string, unknown>) => ({
+            subscriptionType: e.subscriptionType,
+            objectId: `${typeof e.objectId}:${e.objectId}`,
+            objectTypeId: e.objectTypeId,
+            occurredAt: typeof e.occurredAt,
+            attemptNumber: typeof e.attemptNumber,
+          }))
+        : { type: typeof req.body, isArray: false };
+      logger.warn('Invalid webhook payload', { rawPreview, error: parsed.error.flatten() });
       res.status(400).json({ error: 'WEBHOOK_PAYLOAD_INVALID' });
       return;
     }
