@@ -494,7 +494,7 @@ export class OracleClient implements IOracleClient {
     if (reservation.guestProfiles && reservation.guestProfiles.length > 0) {
       roomRate.stayProfiles = reservation.guestProfiles.map((g) => ({
         profileIdList: [{ id: g.oracleProfileId, type: 'Profile' }],
-        reservationProfileType: 'Company',
+        reservationProfileType: 'Guest',
       }));
     }
 
