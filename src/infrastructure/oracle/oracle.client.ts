@@ -88,6 +88,16 @@ export class OracleClient implements IOracleClient {
     });
   }
 
+async updateReservation(oracleId: string, reservation: Partial<OracleReservation>): Promise<Result<ReservationIds, OracleApiError>> {
+    const payload = this.buildReservationPayload(reservation);
+    const hotelId = this.config.hotelId;
+    
+    return this.request('PUT', `/rsv/v1/hotels/${hotelId}/reservations/${oracleId}`, payload, (data) => {
+      return this.extractReservationIds(data);
+    });
+  }
+
+/*   PRUEBA DE PARCHE PARA MANEJAR EL PROBLEMA DE LOS ARRAYS EN PUT DE RESERVAS. ELIMINAR CUANDO SE SOLUCIONE EN ORACLE OHIP, IDEALMENTE EN LA VERSIÓN 1.3.0 DEL API.
   async updateReservation(oracleId: string, reservation: Partial<OracleReservation>): Promise<Result<ReservationIds, OracleApiError>> {
     const postPayload = this.buildReservationPayload(reservation);
     // Oracle PUT expects reservation as object, POST expects array
@@ -98,7 +108,7 @@ export class OracleClient implements IOracleClient {
       return this.extractReservationIds(data);
     });
   }
-
+*/
   async getReservation(oracleId: string): Promise<Result<OracleReservation, OracleApiError>> {
     const hotelId = this.config.hotelId;
     return this.request('GET', `/rsv/v1/hotels/${hotelId}/reservations/${oracleId}`, undefined, (data) => {
@@ -162,6 +172,31 @@ export class OracleClient implements IOracleClient {
 
   // ── Guest Messages ──
 
+async createGuestMessage(message: OracleGuestMessage): Promise<Result<string, OracleApiError>> {
+    const hotelId = this.config.hotelId;
+    
+    const payload = {
+      reservationGuestMessages: {
+        guestMessage: [{
+          messageText: message.messageText,
+          typeOfMessage: 'Text',
+          ...(message.messageType && { recipient: message.messageType }),
+        }]
+      }
+    };
+    
+    return this.request('POST', `/rsv/v1/hotels/${hotelId}/reservations/${message.reservationId}/guestMessages`, payload, (data) => {
+      return this.extractId(data, 'guestMessageId');
+    });
+  }
+
+/* Oracle OHIP no tiene un endpoint específico para Guest Messages. En su lugar, los mensajes se pueden enviar como "comments" al crear o 
+actualizar una reserva, pero esto no es ideal para mensajes independientes que no estén ligados a una modificación de reserva. La API de Oracle
+ OHIP ignora los comentarios que no vienen dentro de un payload de reserva, y no permite agregar comentarios a una reserva existente sin hacer 
+ un PUT completo de la reserva. Esto limita la funcionalidad de mensajes independientes.
+Si Oracle OHIP lanza en el futuro un endpoint específico para Guest Messages (por ejemplo, POST /hotels/{hotelId}/reservations/{reservationId}/guestMessages), 
+este método se puede implementar para aprovecharlo. Mientras tanto, la creación de mensajes independientes no es factible sin afectar la lógica de reservas.
+
   async createGuestMessage(message: OracleGuestMessage): Promise<Result<string, OracleApiError>> {
     const hotelId = this.config.hotelId;
     const payload = {
@@ -173,7 +208,7 @@ export class OracleClient implements IOracleClient {
       return this.extractId(data, 'guestMessageId');
     });
   }
-
+*/
   // ── Service Requests (TrackIt Items) ──
 
   async createServiceRequest(request: OracleServiceRequest): Promise<Result<string, OracleApiError>> {
