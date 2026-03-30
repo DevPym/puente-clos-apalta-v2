@@ -17,7 +17,7 @@ function baseDeal(overrides: Partial<HsDeal> = {}): HsDeal {
     dealname: 'Reserva Pérez',
     check_in: '2026-07-01',
     check_out: '2026-07-05',
-    room_type: 'Casitas',
+    room_type: 'CASITA',
     tipo_de_tarifa: 'Half Board',
     n_huespedes: '2',
     n_ninosas: '0',

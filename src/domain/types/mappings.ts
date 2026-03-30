@@ -44,6 +44,12 @@ export const CompanyTypeMap: Record<string, OracleProfileType> = {
 // Real data from getRoomTypesLOV. PseudoYn=N are real rooms.
 
 export const RoomTypeMap: Record<string, string> = {
+  // Oracle codes (HubSpot internal values)
+  'CASITA': 'CASITA',
+  'PLCASITA': 'PLCASITA',
+  'OWNERC': 'OWNERC',
+  'VILLAS': 'VILLAS',
+  // Label aliases (backward compatibility)
   'Casitas': 'CASITA',
   'Pool Casitas': 'PLCASITA',
   'Owners Casita': 'OWNERC',
