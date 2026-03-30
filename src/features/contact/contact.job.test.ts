@@ -148,8 +148,7 @@ describe('processContact', () => {
     const result = await processContact(deps, { objectId: '101' });
     expect(result.oracleId).toBe('ORACLE-NEW');
     expect(deps.logger.error).toHaveBeenCalledWith(
-      'Failed to write Oracle ID back to HubSpot',
-      expect.objectContaining({ objectId: '101', oracleId: 'ORACLE-NEW' }),
+      expect.stringContaining('Failed to write Oracle ID back to HubSpot contact 101'),
     );
   });
 });
