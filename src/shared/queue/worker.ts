@@ -117,13 +117,8 @@ export class Worker {
           failedAt: new Date(),
         });
 
-        this.logger.error('Job sent to DLQ', {
-          jobId: job.id,
-          jobType: job.type,
-          objectId: job.objectId,
-          errorCode,
-          attempts: job.attempts + 1,
-        });
+        this.logger.error(`Job sent to DLQ: ${job.type} ${job.objectId} [${errorCode}]: ${errorMessage}`);
+        console.error(err);
       }
 
       await this.syncLog.log({
@@ -139,15 +134,8 @@ export class Worker {
         metadata: null,
       });
 
-      this.logger.error('Job failed', {
-        jobId: job.id,
-        jobType: job.type,
-        objectId: job.objectId,
-        errorCode,
-        attempt: job.attempts + 1,
-        sentToDlq,
-        durationMs,
-      });
+      this.logger.error(`Job failed: ${job.type} ${job.objectId} [${errorCode}] attempt ${job.attempts + 1}: ${errorMessage}`);
+      console.error(err);
 
       return true;
     }
