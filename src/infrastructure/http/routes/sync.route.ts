@@ -12,7 +12,7 @@ export function createSyncRouter(queue: QueueRepository, logger: ILogger): Route
 
     const validTypes: JobType[] = [
       'contact.create', 'contact.update',
-      'deal.create', 'deal.update',
+      'deal.create', 'deal.update', 'deal.delete',
       'company.create', 'company.update',
       'appointment.create', 'appointment.update',
     ];
