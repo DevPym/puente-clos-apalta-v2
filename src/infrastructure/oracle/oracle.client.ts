@@ -87,11 +87,23 @@ export class OracleClient implements IOracleClient {
       return this.extractReservationIds(data);
     });
   }
-
 async updateReservation(oracleId: string, reservation: Partial<OracleReservation>): Promise<Result<ReservationIds, OracleApiError>> {
-    const payload = this.buildReservationPayload(reservation);
-    const hotelId = this.config.hotelId;
+    const postPayload = this.buildReservationPayload(reservation);
     
+    // Extraemos el objeto puro de la reserva
+    const resObj = (postPayload as any).reservations.reservation[0];
+    
+    // Inyectamos el ID de la reserva que Oracle exige para el PUT
+    resObj.reservationIdList = [
+      { type: 'Reservation', id: oracleId }
+    ];
+    
+    // Armamos el payload exacto que espera el PUT de OHIP
+    const payload = {
+      reservations: [ resObj ]
+    };
+    
+    const hotelId = this.config.hotelId;
     return this.request('PUT', `/rsv/v1/hotels/${hotelId}/reservations/${oracleId}`, payload, (data) => {
       return this.extractReservationIds(data);
     });
