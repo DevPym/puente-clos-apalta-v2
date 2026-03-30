@@ -161,7 +161,7 @@ describe('OracleClient', () => {
       expect(httpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           method: 'PUT',
-          url: '/crm/v1/guests/ORACLE-123',
+          url: '/crm/v1/profiles/ORACLE-123',
         }),
       );
     });
@@ -221,7 +221,7 @@ describe('OracleClient', () => {
       expect(httpRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           method: 'POST',
-          url: '/crm/v1/companies',
+          url: '/crm/v1/profiles',
         }),
       );
     });
