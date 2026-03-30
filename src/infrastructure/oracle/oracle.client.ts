@@ -54,7 +54,7 @@ export class OracleClient implements IOracleClient {
 
   async updateGuestProfile(oracleId: string, profile: Partial<GuestProfile>): Promise<Result<void, OracleApiError>> {
     const payload = this.buildGuestPayload(profile);
-    return this.request('PUT', `/crm/v1/guests/${oracleId}`, payload, () => undefined);
+    return this.request('PUT', `/crm/v1/profiles/${oracleId}`, payload, () => undefined);
   }
 
   async getGuestProfile(oracleId: string): Promise<Result<GuestProfile, OracleApiError>> {
@@ -67,14 +67,14 @@ export class OracleClient implements IOracleClient {
 
   async createCompanyProfile(profile: CompanyProfile): Promise<Result<string, OracleApiError>> {
     const payload = this.buildCompanyPayload(profile);
-    return this.request('POST', '/crm/v1/companies', payload, (data) => {
+    return this.request('POST', '/crm/v1/profiles', payload, (data) => {
       return this.extractProfileId(data);
     });
   }
 
   async updateCompanyProfile(oracleId: string, profile: Partial<CompanyProfile>): Promise<Result<void, OracleApiError>> {
     const payload = this.buildCompanyPayload(profile);
-    return this.request('PUT', `/crm/v1/companies/${oracleId}`, payload, () => undefined);
+    return this.request('PUT', `/crm/v1/profiles/${oracleId}`, payload, () => undefined);
   }
 
   // ── Reservations ──
