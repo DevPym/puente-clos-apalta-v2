@@ -100,6 +100,7 @@ describe('processDeal', () => {
     expect(deps.hubspot.updateDeal).toHaveBeenCalledWith('201', {
       id_oracle: 'RES-001',
       'numero_de_reserva_': 'CONF-001',
+      confirmation_number__oracle: 'CONF-001',
     });
   });
 

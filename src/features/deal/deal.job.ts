@@ -79,6 +79,7 @@ export async function processDeal(
   const writebackResult = await hubspot.updateDeal(payload.objectId, {
     id_oracle: ids.internalId,
     'numero_de_reserva_': ids.confirmationId ?? null,
+    confirmation_number__oracle: ids.confirmationId ?? null,
   });
   if (!writebackResult.ok) {
     logger.error(`Failed to write Oracle IDs back to HubSpot deal ${payload.objectId}: ${writebackResult.error.code} — ${writebackResult.error.message}`);

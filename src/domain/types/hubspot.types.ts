@@ -44,8 +44,9 @@ export interface HsDeal {
   tipo_de_pago?: string | null;         // enum: Efectivo (CASH), Depósito (DP), etc.
 
   // Custom — bridge IDs (NO eliminar)
-  id_oracle?: string | null;
-  numero_de_reserva_?: string | null;   // trailing underscore is intentional
+  id_oracle?: string | null;                    // Oracle Reservation ID interno
+  numero_de_reserva_?: string | null;           // trailing underscore is intentional
+  confirmation_number__oracle?: string | null;   // Oracle Confirmation Number (para cancelar/buscar)
   id_synxis?: string | null;
 }
 

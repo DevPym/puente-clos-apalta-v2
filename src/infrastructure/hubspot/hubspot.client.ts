@@ -26,7 +26,7 @@ const DEAL_PROPERTIES = [
   'hs_object_id', 'dealname', 'createdate',
   'check_in', 'check_out', 'room_type', 'tipo_de_tarifa',
   'n_huespedes', 'n_ninosas', 'estado_de_reserva', 'tipo_de_pago',
-  'id_oracle', 'numero_de_reserva_', 'id_synxis',
+  'id_oracle', 'numero_de_reserva_', 'confirmation_number__oracle', 'id_synxis',
 ];
 
 const COMPANY_PROPERTIES = [
